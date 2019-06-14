@@ -1,0 +1,143 @@
+
+struct Region (collision AABB, visual AABB) {
+    func getX int {
+        return this.collision.x
+    }
+    
+    func getY int {
+        return this.collision.y
+    }
+    
+    func getMaxX int {
+        return this.collision.x + this.collision.w
+    }
+    
+    func getMaxY int {
+        return this.collision.y + this.collision.h
+    }
+    
+    func getVisualX int {
+        return this.visual.x
+    }
+    
+    func getVisualY int {
+        return this.visual.y
+    }
+    
+    func getVisualMaxX int {
+        return this.visual.x + this.visual.w
+    }
+    
+    func getVisualMaxY int {
+        return this.visual.y + this.visual.h
+    }
+    
+    func getWidth int {
+        return this.collision.w
+    }
+    
+    func getHeight int {
+        return this.collision.h
+    }
+    
+    func getVisualWidth int {
+        return this.visual.w
+    }
+    
+    func getVisualHeight int {
+        return this.visual.h
+    }
+}
+
+func region(x, y, w, h int) Region {
+    region Region = undef
+    region.collision = AABB(x, y, w, h)
+    region.visual = region.collision
+    return region
+}
+
+func region(x, y, w, h, x2, y2, w2, h2 int) Region {
+    region Region = undef
+    region.collision = AABB(x, y, w, h)
+    region.visual = AABB(x2, y2, w2, h2)
+    return region
+}
+
+struct Platform (struct Region, decorations <Decoration> List)
+struct Lake (struct Region)
+struct Bridge (struct Region)
+struct Portal (struct Region)
+struct Decoration (struct Region, texture CaptTexture)
+struct ItemSpawn (struct Region, item Item)
+struct PortalEnabler (struct Region)
+
+func platform(x, y, w, h int) Platform {
+    platform POD Platform
+    platform.collision = AABB(x, y, w, h)
+    platform.visual = AABB(x, y, w, h)
+    return platform
+}
+
+func lake(x, y, w, h int) Lake {
+    lake Lake = undef
+    lake.collision = AABB(x, y, w, h)
+    lake.visual = AABB(x, y, w, h)
+    return lake
+}
+
+func bridge(x, y, w int) Bridge {
+    bridge Bridge = undef
+    bridge.collision = AABB(x, y, w, 4)
+    bridge.visual = AABB(x, y, w, 4)
+    return bridge
+}
+
+func portal(x, y int) Portal {
+    portal Portal = undef
+    portal.collision = AABB(x + 48, y + 64, 32, 64)
+    portal.visual = AABB(x, y, 128, 128)
+    return portal
+}
+
+func decoration(texture CaptTexture, x, y, w, h int) Decoration {
+    decor Decoration = undef
+    decor.collision = AABB(x, y, w, h)
+    decor.visual = AABB(x, y, w, h)
+    decor.texture = texture
+    return decor
+}
+
+func itemSpawn(item Item, x, y, w, h int) ItemSpawn {
+    spawn ItemSpawn = undef
+    spawn.collision = AABB(x, y, w, h)
+    spawn.visual = AABB(x, y, w, h)
+    spawn.item = item
+    return spawn
+}
+
+func portalEnabler(x, y, w, h int) PortalEnabler {
+    enabler PortalEnabler = undef
+    enabler.collision = AABB(x, y, w, h)
+    enabler.visual = AABB(x, y, w, h)
+    return enabler
+}
+
+struct Particle (struct Region, animation GameAnimation){
+    func update bool {
+        if this.animation.currentFrame == this.animation.length - 1, return true
+        this.animation.update()
+        return false
+    }
+    
+    func now CaptTexture {
+        return this.animation.now()
+    }
+}
+
+func particle(sourceAnimation GameAnimation, x, y, w, h int) Particle {
+    particle Particle = undef
+    particle.collision = AABB(x, y, w, h)
+    particle.visual = AABB(x, y, w, h)
+    particle.animation = sourceAnimation.newInstance()
+    return particle
+}

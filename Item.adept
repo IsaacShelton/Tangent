@@ -1,0 +1,2 @@
+
+enum Item (NONE, STAR, WING, GUN, CANNON)

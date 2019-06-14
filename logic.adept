@@ -1,0 +1,127 @@
+
+func playerIsInWater bool {
+    return isInWater(player.getAABB())
+}
+
+func isInWater(aabb AABB) bool {
+    each Lake in [lakes.items, lakes.length] {
+        if aabb.intersecting(it.collision), return true
+    }
+    return false
+}
+
+func collidingGround(aabb AABB) *Region {
+    each Platform in [platforms.items, platforms.length] {
+        if it.collision.intersecting(aabb), return &it as *Region
+    }
+    each Bridge in [bridges.items, bridges.length] {
+        if it.collision.intersecting(aabb), return &it as *Region
+    }
+    return null
+}
+
+func playerCollidingPlatform *Region {
+    return collidingGround(player.getAABB())
+}
+
+func playerOnPlatform *Region {
+    return collidingGround(player.getAABB(0, 1))
+}
+
+func updateSpiders {
+    player_killed_spider bool = false
+    playerAABB AABB = player.getAABB()
+    
+    each Spider in [spiders.items, spiders.length] {
+        // Update spider's animation
+        it.update()
+        
+        // Handle landing on ground
+        ground *Region = collidingGround(it.getAABB(0, 1))
+        it.vy = (ground != null) ? 0 : (it.vy < 24) ? it.vy + 1 : it.vy
+        
+        // Advance spider
+        it.x += it.speed * it.vx
+        collision *Region = collidingGround(it.getAABB())
+        
+        // Turn spider around if ran into something
+        if collision {
+            it.x = (it.vx > 0) ? collision.getX() - 64 : collision.getMaxX()
+            it.vx *= -1
+        }
+        
+        // Apply gravity to spider
+        it.y += it.vy
+        collision = collidingGround(it.getAABB())
+        
+        if collision {
+            it.y = (it.vy > 0) ? collision.getY() - 32 : collision.getMaxY()
+        }
+        
+        // Kill spiders in water
+        if isInWater(it.getAABB()) {
+            spiders.remove(idx--)
+            continue
+        }
+        
+        // Handle player-spider collision
+        if playerAABB.intersecting(it.getAABB()){
+            if player.vy > 0 && player.y + 32 < it.y + 16 {
+                spiders.remove(idx--)
+                player_killed_spider = true
+                continue
+            } else {
+                killPlayer()
+            }
+        }
+        
+        // Turn spider around if about to fall off
+        if ground && collidingGround(it.getAABB(it.vx * 64, 32)) == null {
+            it.vx *= -1
+        }
+    }
+    
+    if player_killed_spider, player.vy = -10
+}
+
+func updateSwordfish {
+    playerAABB AABB = player.getAABB()
+    
+    each Swordfish in [swordfishes.items, swordfishes.length] {
+        it.update()
+        
+        it.x += it.speed * it.vx
+        collision *Region = collidingGround(it.getAABB())
+        
+        if collision {
+            it.vx = (it.vx > 0) ? collision.getX() - 64 : collision.getMaxX()
+            it.vx *= -1
+        }
+        
+        if playerAABB.intersecting(it.getAABB()),
+            killPlayer()
+    }
+}
+
+func updateCannon {
+    unless cannon.has, return
+    c *Cannon = &cannon.value
+    
+    // Handle landing on ground
+    ground *Region = collidingGround(c.getAABB(0, 1))
+    c.vy = (ground != null) ? 0 : (c.vy < 32) ? c.vy + 1 : c.vy
+    
+    // Apply gravity to cannon
+    c.y += c.vy
+    collision *Region = collidingGround(c.getAABB())
+    
+    if collision {
+        c.y = (c.vy > 0) ? collision.getY() - 72 : collision.getMaxY()
+    }
+    
+    // If falling off screen, sit at bottom of lake
+    if c.y + 72 > 1280 {
+        c.y = 1280 - 72
+        c.vy = 0
+    }
+}

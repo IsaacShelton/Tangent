@@ -1,0 +1,37 @@
+
+struct Spider (x, y, vx, vy, speed int, animation GameAnimation) {
+    func update {
+        this.animation.update()
+    }
+    
+    func now CaptTexture {
+        return this.animation.now()
+    }
+    
+    func getAABB AABB {
+        return AABB(this.x, this.y, 64, 32)
+    }
+    
+    func getAABB(adj_x, adj_y int) AABB {
+        return AABB(this.x + adj_x, this.y + adj_y, 64, 32)
+    }
+}
+
+func spider(source_animation GameAnimation, x, y int) Spider {
+    return spider(source_animation, x, y, 1, false)
+}
+
+func spider(source_animation GameAnimation, x, y, speed int) Spider {
+    return spider(source_animation, x, y, speed, false)
+}
+
+func spider(source_animation GameAnimation, x, y, speed int, reverse bool) Spider {
+    spider Spider = undef
+    spider.x = x
+    spider.y = y
+    spider.vx = reverse ? -1 : 1
+    spider.vy = 0
+    spider.speed = speed
+    spider.animation = source_animation.newInstance()
+    return spider
+}

@@ -1,0 +1,63 @@
+
+struct Player (
+    x, y, vx, vy, direction int,
+    swimming, moving, moving_horizontally, parachuting bool,
+    on_ground *Region, frozen_image GameImageEx
+){
+    func create(x, y int){
+        this.x = x
+        this.y = y
+        this.vx = 0
+        this.vy = 0
+        this.direction = 1
+        this.swimming = false
+        this.moving = false
+        this.moving_horizontally = false
+        this.parachuting = false
+        this.on_ground = null
+        this.frozen_image.texture.invalidate()
+    }
+    
+    func create(x, y, vx, vy, direction int,
+            swimming, moving, moving_horizontally, parachuting bool,
+            on_ground *Region, frozen_image GameImageEx){
+        this.x = x
+        this.y = y
+        this.vx = vx
+        this.vy = vy
+        this.direction = direction
+        this.swimming = swimming
+        this.moving = moving
+        this.moving_horizontally = moving_horizontally
+        this.parachuting = parachuting
+        this.on_ground = on_ground
+        this.frozen_image = frozen_image
+    }
+    
+    func freeze(frozen_image GameImageEx) Player {
+        newPlayer Player = undef
+        newPlayer.create(this.x, this.y, this.vx, this.vy,
+            this.direction, this.swimming, this.moving,
+            this.moving_horizontally, this.parachuting,
+            this.on_ground, frozen_image)
+        return newPlayer
+    }
+    
+    func thaw() Player {
+        invalidGameImageEx GameImageEx
+        newPlayer Player = undef
+        newPlayer.create(this.x, this.y, this.vx, this.vy,
+            this.direction, this.swimming, this.moving,
+            this.moving_horizontally, this.parachuting,
+            this.on_ground, invalidGameImageEx)
+        return newPlayer
+    }
+    
+    func getAABB AABB {
+        return AABB(this.x, this.y, 64, 64)
+    }
+    
+    func getAABB(adj_x, adj_y int) AABB {
+        return AABB(this.x + adj_x, this.y + adj_y, 64, 64)
+    }
+}

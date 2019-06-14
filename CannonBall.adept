@@ -1,0 +1,14 @@
+
+struct CannonBall (x, y, vx int) {
+    func getAABB AABB {
+        return AABB(this.x, this.y, 32, 32)
+    }
+}
+
+func cannonBall(x, y, vx int) CannonBall {
+    ball CannonBall = undef
+    ball.x = x
+    ball.y = y
+    ball.vx = vx
+    return ball
+}

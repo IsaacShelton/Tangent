@@ -1,0 +1,16 @@
+
+struct AABB (x, y, w, h int) {
+    func intersecting(other AABB) bool {
+        return this.x < other.x + other.w && this.x + this.w > other.x &&
+            this.y < other.y + other.h && this.y + this.h > other.y
+    }
+}
+
+func AABB(x, y, w, h int) AABB {
+    aabb AABB = undef
+    aabb.x = x
+    aabb.y = y
+    aabb.w = w
+    aabb.h = h
+    return aabb
+}

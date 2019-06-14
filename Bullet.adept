@@ -1,0 +1,14 @@
+
+struct Bullet (x, y, vx int) {
+    func getAABB AABB {
+        return AABB(this.x, this.y, 8, 8)
+    }
+}
+
+func bullet(x, y, vx int) Bullet {
+    bullet Bullet = undef
+    bullet.x = x
+    bullet.y = y
+    bullet.vx = vx
+    return bullet
+}

@@ -1,0 +1,15 @@
+
+struct <$T> Optional (value $T, has bool)
+
+func set(this *<$T> Optional, value $T) {
+    this.value = value
+    this.has = true
+}
+
+func get(this *<$T> Optional) $T {
+    return this.value
+}
+
+func rid(this *<$T> Optional) {
+    this.has = false
+}

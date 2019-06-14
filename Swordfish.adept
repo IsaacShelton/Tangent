@@ -1,0 +1,35 @@
+
+struct Swordfish (x, y, vx, speed, interval, ticker int, animation GameAnimation) {
+    func update {
+        this.animation.update()
+        
+        if ++this.ticker == this.interval {
+            this.ticker = 0
+            this.vx *= -1
+        }
+    }
+    
+    func now CaptTexture {
+        return this.animation.now()
+    }
+    
+    func getAABB AABB {
+        return AABB(this.x, this.y, 256, 64)
+    }
+}
+
+func swordfish(source_animation GameAnimation, x, y, speed, interval int) Swordfish {
+    return swordfish(source_animation, x, y, speed, interval, false)
+}
+
+func swordfish(source_animation GameAnimation, x, y, speed, interval int, reverse bool) Swordfish {
+    fish Swordfish = undef
+    fish.x = x
+    fish.y = y
+    fish.vx = reverse ? -1 : 1
+    fish.speed = speed
+    fish.interval = interval
+    fish.ticker = 0
+    fish.animation = source_animation.newInstance()
+    return fish
+}

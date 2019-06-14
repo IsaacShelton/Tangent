@@ -1,0 +1,19 @@
+
+struct Cannon (x, y, vy, direction int) {
+    func getAABB AABB {
+        return AABB(this.x + 32, this.y, 152 - 64, 72)
+    }
+    
+    func getAABB(adj_x, adj_y int) AABB {
+        return AABB(this.x + adj_x + 32, this.y + adj_y, 152 - 64, 72)
+    }
+}
+
+func cannon(x, y, direction int) Cannon {
+    cannon Cannon = undef
+    cannon.x = x
+    cannon.y = y
+    cannon.vy = 0
+    cannon.direction = direction
+    return cannon
+}

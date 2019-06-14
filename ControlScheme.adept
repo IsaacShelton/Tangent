@@ -1,0 +1,25 @@
+
+struct ControlScheme (up, down, left, right, a, b, pause int)
+
+func controlScheme(up, down, left, right, a, b, pause int) ControlScheme {
+    scheme ControlScheme = undef
+    scheme.up = up
+    scheme.down = down
+    scheme.left = left
+    scheme.right = right
+    scheme.a = a
+    scheme.b = b
+    scheme.pause = pause
+    return scheme
+}
+
+func __equals__(a, b POD ControlScheme) bool {
+    if a.up != b.up,       return false
+    if a.down != b.down,   return false
+    if a.left != b.left,   return false
+    if a.right != b.right, return false
+    if a.a != b.a,         return false
+    if a.b != b.b,         return false
+    if a.pause != b.pause, return false
+    return true
+}

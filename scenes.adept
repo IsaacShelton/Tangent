@@ -1,0 +1,358 @@
+
+func gotoScene(newScene int) {
+    if newScene == 1, gotoScene1(); return
+    if newScene == 2, gotoScene2(); return
+    if newScene == 3, gotoScene3(); return
+    if newScene == 4, gotoScene4(); return
+    if newScene == 5, gotoScene5(); return
+    if newScene == 6, gotoScene6(); return
+    if newScene == 7, gotoScene7(); return
+    if newScene == 8, gotoScene8(); return
+    gotoScene1()
+}
+
+func scenePresets {
+    camera_x = 0.0f
+    camera_y = 0.0f
+    is_dead = false
+    respawn_timer = 0
+    platforms.clear()
+    lakes.clear()
+    bridges.clear()
+    spiders.clear()
+    swordfishes.clear()
+    item = Item::NONE
+    item_spawns.clear()
+    entrance.rid()
+    exit_disabled = false
+    portal_enabler.rid()
+    particles.clear()
+    bullets.clear()
+    cannon.rid()
+    cannon_ball.rid()
+}
+
+func sceneDefaultShadows {
+    shadow = player.freeze(gameImageEx(idle, 0, 0, 64, 64))
+    default_shadow = player.freeze(gameImageEx(idle, 0, 0, 64, 64))
+}
+
+func gotoScene1 {
+    scenePresets()
+    scene = 1
+    scene_width = 2560.0f
+    player.create(640 - 64, 544 - 64)
+    sceneDefaultShadows()
+    createPlatform(512, 544, 256, 256, DECOR_BUSH)
+    createPlatform(1088, 320, 256, 256, DECOR_NONE)
+    createPlatform(64, 704, 256, 128, DECOR_NONE)
+    createPlatform(1920, 480, 256, 512, DECOR_NONE)
+    lakes.add(lake(0, 768, 2560, 512))
+    bridges.add(bridge(256 + 64, 704, 192))
+    bridges.add(bridge(256 + 256 + 256 + 192, 320 + 192, 128))
+    bridges.add(bridge(1920 + 256, 480 + 32, 256))
+    exit.set(portal(1920 + 64, 480 - 128))
+}
+
+func gotoScene2 {
+    scenePresets()
+    scene = 2
+    scene_width = 5120.0f
+    player.create(640 - 64, 544 - 64)
+    sceneDefaultShadows()
+    createPlatform(512, 544, 256, 640, DECOR_NONE)
+    createPlatform(1298, 544, 256, 384, DECOR_FLOWERA)
+    createPlatform(1984, 384, 512, 192, DECOR_NONE)
+    createPlatform(3072, 256, 256, 256, DECOR_FLOWERA)
+    createPlatform(4608, 512, 384, 512, DECOR_NONE)
+    createPlatform(3712, 512, 512, 448, DECOR_BUSH)
+    lakes.add(lake(0, 768, 5120, 512))
+    bridges.add(bridge(384, 704, 128))
+    bridges.add(bridge(3328, 384, 128))
+    bridges.add(bridge(4544, 704, 64))
+    spiders.add(spider(spider_animation, 1298, 544 - 32))
+    spiders.add(spider(spider_animation, 4608, 512 - 32))
+    spiders.add(spider(spider_animation, 3712, 512 - 32))
+    spiders.add(spider(spider_animation, 3712 + 256, 512 - 32))
+    swordfishes.add(swordfish(swordfish_animation, 2048, 1024, 4, 180));
+    entrance.set(portal(player.x - 32, player.y - 64))
+    exit.set(portal(2048, 256))
+}
+
+func gotoScene3 {
+    scenePresets()
+    scene = 3
+    scene_width = 5120.0f
+    player.create(320 - 64, 544 - 64)
+    sceneDefaultShadows()
+    createPlatform(128, 544, 640, 320, DECOR_FENCE)
+    createPlatform(1024, 480, 512, 192, DECOR_MUSHROOMB)
+    createPlatform(2048, 544, 256, 704, DECOR_MUSHROOMA)
+    createPlatform(3072, 544, 320, 192, DECOR_MUSHROOMB)
+    createPlatform(4160, 576, 640, 384, DECOR_BUSH)
+    lakes.add(lake(0, 768, 5120, 512))
+    bridges.add(bridge(128 + 640, 544 + 192, 128))
+    bridges.add(bridge(2048 + 256, 544 + 192, 128))
+    spiders.add(spider(beetle_animation, 1024, 480 - 32, 2))
+    spiders.add(spider(beetle_animation, 2048, 544 - 32, 2))
+    spiders.add(spider(beetle_animation, 4160, 576 - 32, 2))
+    spiders.add(spider(beetle_animation, 4160 + 128, 576 - 32, 2))
+    spiders.add(spider(beetle_animation, 4160 + 384, 576 - 32, 2))
+    swordfishes.add(swordfish(swordfish_animation, 512 + 4 * 240, 1024, 4, 240, true))
+    swordfishes.add(swordfish(swordfish_animation, 2048 + 512, 896, 4, 270, false))
+    swordfishes.add(swordfish(swordfish_animation, 2048 + 512 + 1024, 1024, 4, 240, true))
+    swordfishes.add(swordfish(swordfish_animation, 4160, 1024, 4, 90, false))
+    swordfishes.add(swordfish(swordfish_animation, 4160 - 64 + 90 * 4, 1088, 4, 90, true))
+    swordfishes.add(swordfish(swordfish_animation, 4160 + 64, 1184, 4, 90, false))
+    item_spawns.add(itemSpawn(Item::WING, 1024 + 256, 480 - 64, 64, 64))
+    entrance.set(portal(player.x - 32, player.y - 64))
+    exit.set(portal(4864, 1280 - 128))
+}
+
+func gotoScene4 {
+    scenePresets()
+    scene = 4
+    scene_width = 5120.0f
+    player.create(640 - 64, 544 - 64)
+    sceneDefaultShadows()
+    createPlatform(512, 544, 256, 384, DECOR_NONE)
+    createPlatform(1088, 480, 256, 256, DECOR_NONE)
+    createPlatform(1856, 384, 256, 768, DECOR_FLOWERA)
+    createPlatform(2752, 320, 256, 832, DECOR_BUSH)
+    createPlatform(3584, 512, 256, 640, DECOR_STUMP)
+    createPlatform(4352, 384, 576, 704, DECOR_NONE)
+    lakes.add(lake(0, 768, 5120, 512))
+    bridges.add(bridge(512 + 256, 704, 128))
+    spiders.add(spider(spider_animation, 1856 + 192, 384 - 32, 1))
+    spiders.add(spider(spider_animation, 2752, 320 - 32, 1))
+    spiders.add(spider(spider_animation, 2752 + 128, 320 - 32, 1))
+    spiders.add(spider(spider_animation, 2752 + 128, 320 - 32, 1))
+    spiders.add(spider(beetle_animation, 3584, 512 - 32, 2))
+    spiders.add(spider(beetle_animation, 4352, 384 - 32, 2))
+    spiders.add(spider(beetle_animation, 4352 + 256, 384 - 32, 2))
+    item_spawns.add(itemSpawn(Item::WING, 1088 + 96, 480 - 64, 64, 64))
+    entrance.set(portal(player.x - 32, player.y - 64))
+    exit.set(portal(4736, 256))
+}
+
+func gotoScene5 {
+    scenePresets()
+    scene = 5
+    scene_width = 2560.0f
+    player.create(640 - 64, 544 - 64)
+    sceneDefaultShadows()
+    createPlatform(256 + 256, 544, 256, 256, DECOR_NONE)
+    createPlatform(64, 704, 256, 128, DECOR_FLOWERA)
+    createPlatform(1024, 384 + 32, 640, 832, DECOR_BUSH)
+    createPlatform(2112, 576, 256, 320, DECOR_NONE)
+    lakes.add(lake(0, 768, 2560, 512))
+    bridges.add(bridge(256 + 64, 704, 192))
+    swordfishes.add(swordfish(swordfish_animation, 1792, 1024, 4, 90, false))
+    item_spawns.add(itemSpawn(Item::STAR, 192 + 32, 704 - 64, 64, 64))
+    entrance.set(portal(player.x - 32, player.y - 64))
+    exit.set(portal(1024 + 320, 384 + 32 - 128))
+    exit_disabled = true
+    portal_enabler.set(portalEnabler(2112 + 128, 576 - 64, 64, 64))
+}
+
+func gotoScene6 {
+    scenePresets()
+    scene = 6
+    scene_width = 5120.0f
+    player.create(640 - 64, 544 - 64)
+    sceneDefaultShadows()
+    createPlatform(256, 544, 512, 384, DECOR_BUSH)
+    createPlatform(1088, 480, 256, 256, DECOR_NONE)
+    createPlatform(1792, 480, 320, 256, DECOR_FLOWERA)
+    createPlatform(2496, 480, 320, 256, DECOR_BUSH)
+    createPlatform(2976, 352, 768, 256, DECOR_FENCE)
+    createPlatform(4224, 384, 704, 256, DECOR_FLOWERA)
+    lakes.add(lake(0, 768, 5120, 512))
+    bridges.add(bridge(512 + 256, 704, 128))
+    spiders.add(spider(spider_animation, 1792, 480 - 32, 1))
+    spiders.add(spider(spider_animation, 1792 + 128, 480 - 32, 1))
+    spiders.add(spider(spider_animation, 1792 + 256, 480 - 32, 1))
+    spiders.add(spider(spider_animation, 2496, 480 - 32, 1))
+    spiders.add(spider(spider_animation, 2496 + 128, 480 - 32, 1))
+    spiders.add(spider(spider_animation, 2496 + 256, 480 - 32, 1))
+    spiders.add(spider(spider_animation, 2976, 352 - 32, 1))
+    spiders.add(spider(spider_animation, 2976 + 128, 352 - 32, 1))
+    spiders.add(spider(spider_animation, 2976 + 256, 352 - 32, 1, true))
+    spiders.add(spider(spider_animation, 2976 + 384, 352 - 32, 1))
+    spiders.add(spider(spider_animation, 2976 + 512, 352 - 32, 1))
+    spiders.add(spider(spider_animation, 2976 + 640, 352 - 32, 1, true))
+    spiders.add(spider(spider_animation, 2976 + 768, 352 - 32, 1))
+    item_spawns.add(itemSpawn(Item::GUN, 1088 + 96, 480 - 64, 64, 64))
+    entrance.set(portal(player.x - 32, player.y - 64))
+    exit.set(portal(4736, 256))
+}
+
+func gotoScene7 {
+    scenePresets()
+    scene = 7
+    scene_width = 5120.0f
+    player.create(640 - 64, 480 - 64)
+    sceneDefaultShadows()
+    createPlatform(448, 480, 320, 384, DECOR_MUSHROOMB)
+    createPlatform(1088, 480, 256, 256, DECOR_NONE)
+    createPlatform(1792, 480, 320, 512, DECOR_MUSHROOMA)
+    createPlatform(2496, 480, 320, 256, DECOR_BUSH)
+    createPlatform(2976, 352, 320, 512, DECOR_MUSHROOMA)
+    createPlatform(3456, 512, 640, 512, DECOR_FENCE)
+    createPlatform(4224, 384, 704, 256, DECOR_MUSHROOMA)
+    lakes.add(lake(0, 768, 5120, 512))
+    bridges.add(bridge(512 + 256, 640, 128))
+    spiders.add(spider(beetle_animation, 1792, 480 - 32, 2))
+    spiders.add(spider(beetle_animation, 1792 + 128, 480 - 32, 2, true))
+    spiders.add(spider(beetle_animation, 1792 + 128, 480 - 32, 2))
+    spiders.add(spider(beetle_animation, 1792 + 256, 480 - 32, 2, true))
+    spiders.add(spider(spider_animation, 2496, 480 - 32, 1))
+    spiders.add(spider(spider_animation, 2496 + 128, 480 - 32, 1))
+    spiders.add(spider(spider_animation, 2496 + 256, 480 - 32, 1))
+    spiders.add(spider(spider_animation, 2496 + 128, 480 - 32, 1, true))
+    spiders.add(spider(spider_animation, 2496 + 256, 480 - 32, 1, true))
+    spiders.add(spider(beetle_animation, 3456, 512 - 32, 2))
+    spiders.add(spider(spider_animation, 3456 + 128, 512 - 32, 1, true))
+    spiders.add(spider(spider_animation, 3456 + 480, 512 - 32, 1))
+    spiders.add(spider(beetle_animation, 3456 + 512, 512 - 32, 2, true))
+    spiders.add(spider(spider_animation, 3456 + 128, 512 - 32, 1))
+    spiders.add(spider(beetle_animation, 3456 + 384, 512 - 32, 2, true))
+    item_spawns.add(itemSpawn(Item::CANNON, 1088 + 96, 480 - 64, 64, 64))
+    entrance.set(portal(player.x - 32, player.y - 64))
+    exit.set(portal(4736, 256))
+}
+
+func gotoScene8 {
+    scenePresets()
+    scene = 8
+    scene_width = 2560.0f
+    player.create(640 - 64, 544 - 64)
+    sceneDefaultShadows()
+    createPlatform(128, 544, 896, 384, DECOR_BUSH)
+    createPlatform(1152, 256, 256, 384, DECOR_FLOWERA)
+    createPlatform(1920, 480, 256, 512, DECOR_MUSHROOMB)
+    lakes.add(lake(0, 768, 2560, 512))
+    bridges.add(bridge(1408, 448, 128))
+    bridges.add(bridge(1920 + 256, 480 + 32, 256))
+    bridges.add(bridge(1920 - 128, 640, 128))
+    item_spawns.add(itemSpawn(Item::WING, player.x, player.y - 128, 64, 64))
+    item_spawns.add(itemSpawn(Item::GUN, 384, 544 - 64, 64, 64))
+    item_spawns.add(itemSpawn(Item::CANNON, 768, 544 - 64, 64, 64))
+    entrance.set(portal(player.x - 32, player.y - 64))
+    exit.rid()
+}
+
+func pause {
+    was_paused bool = is_paused
+    is_paused = !is_dead && !is_paused
+    
+    if was_paused {
+        accumulated_pause_time += glfwGetTime() - when_paused
+    } else {
+        when_paused = glfwGetTime()
+    }
+}
+
+func teleport {
+    teleporting = true
+    teleport_opacity = 1.0f
+}
+
+func killPlayer {
+    is_dead = true
+    respawn_timer = 135
+    death_x = player.x as float
+    death_y = player.y as float
+    death_vx = 0.0f
+    death_vy = -30.0f
+    
+    if item == Item::GUN {
+        // Technically height should be 88, but it looks better as 96
+        death_image = gameImageEx(gun_death, 0, -24, 64, 96)
+    } else if item == Item::CANNON {
+        death_image = gameImageEx(cannoneer_death, 0, -24, 64, 88)
+    } else {
+        death_image = gameImageEx(death, 0, 0, 64, 64)
+    }
+}
+
+DECOR_NONE == 0
+DECOR_BUSH == 1
+DECOR_FLOWERA == 2
+DECOR_FLOWERB == 3
+DECOR_ROCKA == 4
+DECOR_ROCKB == 5
+DECOR_MUSHROOMA == 6
+DECOR_MUSHROOMB == 7
+DECOR_STUMP == 8
+DECOR_GRASSA == 9
+DECOR_GRASSB == 10
+DECOR_GRASSC == 11
+DECOR_FENCE == 12
+
+func createPlatform(x, y, w, h, decor int) {
+    p POD Platform = platform(x, y, w, h)
+    
+    if decor == DECOR_NONE {
+        platforms.add(p)
+        return
+    }
+    
+    if decor == DECOR_BUSH {
+        p.decorations.add(decoration(bushl, x + 64, y - 64, 64, 64))
+        p.decorations.add(decoration(bushr, x + 128, y - 64, 64, 64))
+        platforms.add(p)
+        return
+    }
+    
+    if decor == DECOR_FLOWERA {
+        p.decorations.add(decoration(flower_a, x + 64, y - 64, 64, 64))
+        platforms.add(p)
+        return
+    }
+    
+    if decor == DECOR_FLOWERB {
+        p.decorations.add(decoration(flower_a, x + 64, y - 64, 64, 64))
+        platforms.add(p)
+        return
+    }
+    
+    if decor == DECOR_ROCKA {
+        p.decorations.add(decoration(rock_a, x + 64, y - 64, 64, 64))
+        platforms.add(p)
+        return
+    }
+    
+    if decor == DECOR_ROCKB {
+        p.decorations.add(decoration(rock_b, x + 128, y - 64, 64, 64))
+        platforms.add(p)
+        return
+    }
+    
+    if decor == DECOR_MUSHROOMA {
+        p.decorations.add(decoration(mushroom_a, x + 64, y - 64, 64, 64))
+        platforms.add(p)
+        return
+    }
+    
+    if decor == DECOR_MUSHROOMB {
+        p.decorations.add(decoration(mushroom_b, x + w - 128, y - 64, 64, 64))
+        platforms.add(p)
+        return
+    }
+    
+    if decor == DECOR_STUMP {
+        p.decorations.add(decoration(stump, x + 64, y - 64, 64, 64))
+        platforms.add(p)
+        return
+    }
+    
+    if decor == DECOR_FENCE {
+        p.decorations.add(decoration(fence_a, x + w - 128, y - 64, 64, 64))
+        p.decorations.add(decoration(fence_b, x + w - 192, y - 64, 64, 64))
+        platforms.add(p)
+        return
+    }
+    
+    printf('ERROR: createPlatform() invalid decor type!\n')
+}

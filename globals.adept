@@ -1,0 +1,266 @@
+
+import '../captain/captain.adept'
+import 'GameAnimation.adept'
+
+idle CaptTexture
+death CaptTexture
+gun_idle CaptTexture
+gun_death CaptTexture
+cannoneer_idle CaptTexture
+cannoneer_death CaptTexture
+platform_north CaptTexture
+platform_north_east CaptTexture
+platform_north_west CaptTexture
+platform_south CaptTexture
+platform_south_east CaptTexture
+platform_south_west CaptTexture
+platform_east CaptTexture
+platform_west CaptTexture
+platform_center CaptTexture
+water CaptTexture
+sky CaptTexture
+bridge0 CaptTexture
+bridge1 CaptTexture
+parachute CaptTexture
+cannoneer_parachute CaptTexture
+bushl CaptTexture
+bushr CaptTexture
+flower_a CaptTexture
+flower_b CaptTexture
+rock_a CaptTexture
+rock_b CaptTexture
+mushroom_a CaptTexture
+mushroom_b CaptTexture
+stump CaptTexture
+grass_a CaptTexture
+grass_b CaptTexture
+grass_c CaptTexture
+fence_a CaptTexture
+fence_b CaptTexture
+slot CaptTexture
+star CaptTexture
+wing CaptTexture
+gun CaptTexture
+bullet CaptTexture
+cannon_power CaptTexture
+cannon_idle CaptTexture
+ball CaptTexture
+win CaptTexture
+wave GameAnimation
+walk GameAnimation
+swim GameAnimation
+gun_walk GameAnimation
+gun_swim GameAnimation
+cannoneer_walk GameAnimation
+cannoneer_swim GameAnimation
+spider_animation GameAnimation
+beetle_animation GameAnimation
+swordfish_animation GameAnimation
+inwards_portal GameAnimation
+outwards_portal GameAnimation
+disabled_portal GameAnimation
+smoke GameAnimation
+flame GameAnimation
+enabler GameAnimation
+coin GameAnimation
+controls ControlScheme
+wasd ControlScheme
+arrows ControlScheme
+player Player
+shadow Player
+default_shadow Player
+camera_x float
+camera_y float
+sky_shift float
+when_paused double
+accumulated_pause_time double
+teleporting bool
+teleport_opacity float
+is_paused bool
+is_dead bool
+respawn_timer int
+death_x float
+death_y float
+death_vx float
+death_vy float
+death_image GameImageEx
+scene int
+scene_width float
+platforms <Platform> List
+lakes <Lake> List
+bridges <Bridge> List
+spiders <Spider> List
+swordfishes <Swordfish> List
+item_spawns <ItemSpawn> List
+entrance <Portal> Optional
+exit <Portal> Optional
+exit_disabled bool
+portal_enabler <PortalEnabler> Optional
+item Item
+item_screen_x float
+item_screen_y float
+particles <Particle> List
+bullets <Bullet> List
+cannon <Cannon> Optional
+cannon_ball <CannonBall> Optional
+
+#if show_fps
+    previous_time double
+    frame_count int
+#end
+
+func loadAssets {
+    assetsFolder String = "/Users/isaac/AdeptProjects/captain2d/Tangent/assets/"
+    idle = captTexture(assetsFolder + "idle.png", false)
+    death = captTexture(assetsFolder + "death.png", false)
+    gun_idle = captTexture(assetsFolder + "gunIdle.png", false)
+    gun_death = captTexture(assetsFolder + "gunDeath.png", false)
+    cannoneer_idle = captTexture(assetsFolder + "cannoneerIdle.png", false)
+    cannoneer_death = captTexture(assetsFolder + "cannoneerDeath.png", false)
+    platform_north = captTexture(assetsFolder + "platformn.png", false)
+    platform_north_east = captTexture(assetsFolder + "platformne.png", false)
+    platform_north_west = captTexture(assetsFolder + "platformnw.png", false)
+    platform_south = captTexture(assetsFolder + "platforms.png", false)
+    platform_south_east = captTexture(assetsFolder + "platformse.png", false)
+    platform_south_west = captTexture(assetsFolder + "platformsw.png", false)
+    platform_east = captTexture(assetsFolder + "platforme.png", false)
+    platform_west = captTexture(assetsFolder + "platformw.png", false)
+    platform_center = captTexture(assetsFolder + "platformc.png", false)
+    water = captTexture(assetsFolder + "water.png", false)
+    sky = captTexture(assetsFolder + "skywrap.png", false)
+    bridge0 = captTexture(assetsFolder + "bridge0.png", false)
+    bridge1 = captTexture(assetsFolder + "bridge1.png", false)
+    parachute = captTexture(assetsFolder + "parachute.png", false)
+    cannoneer_parachute = captTexture(assetsFolder + "cannoneerParachute.png", false)
+    bushl = captTexture(assetsFolder + "bushl.png", false)
+    bushr = captTexture(assetsFolder + "bushr.png", false)
+    flower_a = captTexture(assetsFolder + "flowera.png", false)
+    flower_b = captTexture(assetsFolder + "flowerb.png", false)
+    rock_a = captTexture(assetsFolder + "rocka.png", false)
+    rock_b = captTexture(assetsFolder + "rockb.png", false)
+    mushroom_a = captTexture(assetsFolder + "mushrooma.png", false)
+    mushroom_b = captTexture(assetsFolder + "mushroomb.png", false)
+    stump = captTexture(assetsFolder + "stump.png", false)
+    grass_a = captTexture(assetsFolder + "grassa.png", false)
+    grass_b = captTexture(assetsFolder + "grassb.png", false)
+    grass_c = captTexture(assetsFolder + "grassc.png", false)
+    fence_a = captTexture(assetsFolder + "fencea.png", false)
+    fence_b = captTexture(assetsFolder + "fenceb.png", false)
+    slot = captTexture(assetsFolder + "slot.png", false)
+    star = captTexture(assetsFolder + "star.png", false)
+    wing = captTexture(assetsFolder + "wing.png", false)
+    gun = captTexture(assetsFolder + "gun.png", false)
+    bullet = captTexture(assetsFolder + "bullet.png", false)
+    cannon_power = captTexture(assetsFolder + "cannonPower.png", false)
+    cannon_idle = captTexture(assetsFolder + "cannon0.png", false)
+    ball = captTexture(assetsFolder + "ball.png", false)
+    win = captTexture(assetsFolder + "win.png", false)
+    wave = gameAnimation(assetsFolder + "wave%.png", 0, 3, 10)
+    walk = gameAnimation(assetsFolder + "walk%.png", 0, 3, 4)
+    swim = gameAnimation(assetsFolder + "swim%.png", 0, 5, 6)
+    gun_walk = gameAnimation(assetsFolder + "gunWalk%.png", 0, 5, 6)
+    gun_swim = gameAnimation(assetsFolder + "gunSwim%.png", 0, 5, 6)
+    cannoneer_walk = gameAnimation(assetsFolder + "cannoneerWalk%.png", 0, 3, 6)
+    cannoneer_swim = gameAnimation(assetsFolder + "cannoneerSwim%.png", 0, 5, 6)
+    spider_animation = gameAnimation(assetsFolder + "spider%.png", 0, 3, 4)
+    beetle_animation = gameAnimation(assetsFolder + "beetle%.png", 0, 3, 4)
+    swordfish_animation = gameAnimation(assetsFolder + "swordfish%.png", 0, 1, 30)
+    inwards_portal = gameAnimation(assetsFolder + "portal%.png", 4, 0, 15)
+    outwards_portal = gameAnimation(assetsFolder + "portal%.png", 0, 4, 15)
+    disabled_portal = gameAnimation(assetsFolder + "disabled_portal%.png", 0, 16, 5)
+    smoke = gameAnimation(assetsFolder + "smoke%.png", 0, 4, 1)
+    flame = gameAnimation(assetsFolder + "flame%.png", 0, 1, 1)
+    enabler = gameAnimation(assetsFolder + "enabler%.png", 0, 1, 20)
+    coin = gameAnimation(assetsFolder + "coin%.png", 0, 7, 5)
+}
+
+func destroyAssets {
+    idle.free()
+    death.free()
+    gun_idle.free()
+    gun_death.free()
+    cannoneer_idle.free()
+    cannoneer_death.free()
+    platform_north.free()
+    platform_north_east.free()
+    platform_north_west.free()
+    platform_south.free()
+    platform_south_east.free()
+    platform_south_west.free()
+    platform_east.free()
+    platform_west.free()
+    platform_center.free()
+    water.free()
+    sky.free()
+    bridge0.free()
+    bridge1.free()
+    parachute.free()
+    cannoneer_parachute.free()
+    bushl.free()
+    bushr.free()
+    flower_a.free()
+    flower_b.free()
+    rock_a.free()
+    rock_b.free()
+    mushroom_a.free()
+    mushroom_b.free()
+    stump.free()
+    grass_a.free()
+    grass_b.free()
+    grass_c.free()
+    fence_a.free()
+    fence_b.free()
+    slot.free()
+    star.free()
+    wing.free()
+    gun.free()
+    bullet.free()
+    cannon_power.free()
+    cannon_idle.free()
+    ball.free()
+    win.free()
+    wave.destroy()
+    walk.destroy()
+    swim.destroy()
+    gun_walk.destroy()
+    gun_swim.destroy()
+    cannoneer_walk.destroy()
+    cannoneer_swim.destroy()
+    spider_animation.destroy()
+    beetle_animation.destroy()
+    swordfish_animation.destroy()
+    inwards_portal.destroy()
+    outwards_portal.destroy()
+    disabled_portal.destroy()
+    smoke.destroy()
+    flame.destroy()
+    enabler.destroy()
+    coin.destroy()
+    
+    // HACK: Manually deleting global variables since compiler
+    //       doesn't handle it yet
+    platforms.__defer__()
+    lakes.__defer__()
+    bridges.__defer__()
+    spiders.__defer__()
+    swordfishes.__defer__()
+    item_spawns.__defer__()
+    particles.__defer__()
+    bullets.__defer__()
+}
+
+func setupState {
+    wasd = controlScheme(GLFW_KEY_SPACE, GLFW_KEY_S, GLFW_KEY_A, GLFW_KEY_D, GLFW_KEY_J, GLFW_KEY_K, GLFW_KEY_ESCAPE)
+    arrows = controlScheme(GLFW_KEY_UP, GLFW_KEY_DOWN, GLFW_KEY_LEFT, GLFW_KEY_RIGHT, GLFW_KEY_SPACE, GLFW_KEY_LEFT_SHIFT, GLFW_KEY_ESCAPE)
+    controls = wasd
+    when_paused = 0.0
+    accumulated_pause_time = 0.0
+    is_paused = false
+    is_dead = false
+    respawn_timer = 0
+    scene = 0
+    scene_width = 1920.0f
+    item = Item::NONE
+    item_screen_x = 0.0f
+    item_screen_y = 0.0f
+}

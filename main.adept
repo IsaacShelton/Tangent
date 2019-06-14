@@ -1,0 +1,501 @@
+
+#set show_fps false
+
+pragma compiler_supports '2.2'
+pragma no_type_info
+
+import 'AABB.adept'
+import 'Bullet.adept'
+import 'Cannon.adept'
+import 'CannonBall.adept'
+import 'ControlScheme.adept'
+import 'GameAnimation.adept'
+import 'GameImageEx.adept'
+import 'Item.adept'
+import 'Player.adept'
+import 'Region.adept'
+import 'Spider.adept'
+import 'Swordfish.adept'
+import 'Optional.adept'
+import 'globals.adept'
+import 'addons.adept'
+import 'scenes.adept'
+import 'logic.adept'
+import 'draw.adept'
+
+import '2.2/basics.adept'
+import '2.2/List.adept'
+import '../captain/captain.adept'
+
+func main {
+    unless captPrepare(), return
+    
+    captOnSetup(func &on_setup)
+    captOnStep(func &on_step, 60)
+    captOnKey(func &on_key)
+    captOnDraw(func &on_draw)
+    captOnExit(func &on_exit)
+    
+    captAddTypical(64.0f, 64.0f)
+    captAddTypical(64.0f, 32.0f)
+    captAddTypical(128.0f, 128.0f)
+    
+    captCustomView(1920.0f, 1280.0f)
+    captStart('Tangent', true)
+}
+
+func on_setup {
+    loadAssets()
+    setupState()
+    gotoScene1()
+    
+    #if show_fps
+        previous_time = glfwGetTime()
+        frame_count = 0
+    #end
+}
+
+func on_exit {
+    destroyAssets()
+}
+
+func on_step {
+    if is_dead {
+        // Respawn if death animation is over
+        if death_y > 1280.0f || --respawn_timer == 0 {
+            is_dead = false
+            respawn_timer = 0
+            item = Item::NONE
+            cannon.rid()
+            gotoScene(scene)
+        }
+        
+        // Animate death if initial pause-time is over
+        if respawn_timer < 120 {
+            death_x += death_vx
+            death_y += death_vy
+            death_vy += 1.0f
+        }
+        
+        return
+    }
+    
+    // Wait to resume if paused
+    if is_paused, return
+    
+    if player.swimming {
+        gun_swim.update()
+        cannoneer_swim.update()
+        
+        unless playerIsInWater() {
+            // Transition from swimming -> walking
+            player.swimming = false
+            swim.reset()
+            walk.reset()
+            gun_walk.reset()
+            gun_swim.reset()
+            cannoneer_walk.reset()
+            cannoneer_swim.reset()
+            player.vy -= 20
+            
+            // Launch player in direction if moving horizontall
+            if player.moving_horizontally, player.vx += player.direction * 10
+        }
+    } else if playerIsInWater() {
+        // Transition from walking - > swimming
+        player.swimming = true
+        swim.reset()
+        walk.reset()
+        gun_walk.reset()
+        gun_swim.reset()
+        cannoneer_walk.reset()
+        cannoneer_swim.reset()
+    }
+    
+    // Update conditional animations
+    if player.moving {
+        if player.swimming && item != Item::GUN {
+            swim.update()
+        } else unless player.parachuting {
+            if item == Item::GUN,         gun_walk.update()
+            else if item == Item::CANNON, cannoneer_walk.update()
+            else                          walk.update()
+        }
+    }
+    
+    wave.update()
+    inwards_portal.update()
+    disabled_portal.update()
+    outwards_portal.update()
+    enabler.update()
+    
+    // Record movement & whether horizontally moving
+    player.moving = false
+    player.moving_horizontally = false
+    
+    each Particle in [particles.items, particles.length] {
+        if it.update(), particles.remove(idx--)
+    }
+    
+    each Bullet in [bullets.items, bullets.length] {
+        it.x += it.vx
+        
+        // Destroy off-screen bullets
+        if it.x < 0 || it.x > scene_width as int {
+            bullets.remove(idx--)
+            continue
+        }
+        
+        aabb AABB = it.getAABB()
+        
+        if collidingGround(aabb) != null {
+            bullets.remove(idx--)
+            continue
+        }
+        
+        hit bool = false
+        
+        // Test hit for spiders
+        each spider Spider in [spiders.items, spiders.length] {
+            if aabb.intersecting(spider.getAABB()) {
+                spiders.remove(idx--)
+                hit = true
+                break
+            }
+        }
+        
+        // Test hit for swordfish
+        unless hit, each fish Swordfish in [swordfishes.items, swordfishes.length] {
+            if aabb.intersecting(fish.getAABB()) {
+                swordfishes.remove(idx--)
+                hit = true
+                break
+            }
+        }
+        
+        if hit, bullets.remove(idx--)
+    }
+    
+    if cannon_ball.has {
+        cannon_ball.value.x += cannon_ball.value.vx
+        aabb AABB = cannon_ball.value.getAABB()
+        
+        // Destroy off-screen & stopped cannons balls
+        if cannon_ball.value.x < 0 || cannon_ball.value.x as float > scene_width ||
+                collidingGround(aabb) != null {
+            cannon_ball.rid()
+        } else {
+            hit bool = false
+            
+            // Test hit for spiders
+            each spider Spider in [spiders.items, spiders.length] {
+                if aabb.intersecting(spider.getAABB()) {
+                    spiders.remove(idx--)
+                    hit = true
+                    break
+                }
+            }
+            
+            // Test hit for swordfish
+            unless hit, each fish Swordfish in [swordfishes.items, swordfishes.length] {
+                if aabb.intersecting(fish.getAABB()) {
+                    swordfishes.remove(idx--)
+                    hit = true
+                    break
+                }
+            }
+            
+            if !hit && aabb.intersecting(player.getAABB()){
+                killPlayer()
+                return
+            }
+        }
+    }
+    
+    if captKeyHeld(controls.right) {
+        // Walk right
+        player.x += (item == Item::WING && captKeyHeld(controls.a)) ? 8 : 6
+        player.direction = 1
+        player.moving = true
+        player.moving_horizontally = true
+        
+        // Prevent walking into something
+        collision *Region = playerCollidingPlatform()
+        if collision, player.x = collision.getX() - 64
+    }
+    
+    if captKeyHeld(controls.left) {
+        // Walk left
+        player.x += (item == Item::WING && captKeyHeld(controls.a)) ? -8 : -6
+        player.direction = -1
+        player.moving = true
+        player.moving_horizontally = true
+        
+        // Prevent walking into something
+        collision *Region = playerCollidingPlatform()
+        if collision, player.x = collision.getMaxX()
+    }
+    
+    currently_on_ground *Region = playerOnPlatform()
+    
+    if player.swimming {
+        // Swimming Mode
+        
+        if captKeyHeld(controls.up) {
+            // Swim upwards
+            player.y -= (item == Item::WING && captKeyHeld(controls.a)) ? 6 : 4
+            player.moving = true
+            
+            // Prevent swimming upwards into something
+            collision *Region = playerCollidingPlatform()
+            if collision, player.y = collision.getMaxY()
+        }
+        
+        if captKeyHeld(controls.down) {
+            // Swim downwards
+            player.y += (item == Item::WING && captKeyHeld(controls.a)) ? 6 : 4
+            player.moving = true
+        }
+        
+        // Sink player in water
+        player.vy += (player.vy < 1) ? 1 : (player.vy > 1) ? -1 : 0
+    } else if currently_on_ground == null {
+        // Airborn Mode
+        player.vy += (player.vy < 24) ? 1 : 0
+    } else {
+        // Grounded Mode
+        
+        if item == Item::WING && captKeyHeld(controls.b) {
+            // Wing Big Jump Ability
+            player.vy = -24
+            player.vx += player.moving_horizontally ? 1 : 0
+            particles.add(particle(smoke, player.x, player.y, 64, 64))
+        } else if captKeyHeld(controls.up) {
+            // Standard Jump
+            player.vy = -20
+        } else {
+            // Stand on Ground
+            player.vy = 0
+        }
+    }
+    
+    // Parachute if falling in air and UP is held
+    player.parachuting = currently_on_ground == null && player.vy > 0 && captKeyHeld(controls.up);
+    if player.parachuting && player.vy > 4, player.vy = 4;
+    
+    // Apply horizontal force on player
+    player.x += player.vx
+    collision *Region = playerCollidingPlatform()
+    if collision, player.x = (player.vx > 0) ? collision.getX() - 64 : collision.getMaxX()
+    
+    // Apply vertical force on player
+    player.y += player.vy
+    collision = playerCollidingPlatform()
+    if collision, player.y = (player.vy > 0) ? collision.getY() - 64 : collision.getMaxY()
+    
+    // Apply friction
+    player.vx += (player.vx < 0) ? 1 : (player.vx > 0) ? -1 : 0;
+    
+    // Clamp player to level
+    player.x = (player.x < 0) ? 0 : (player.x as float + 64.0f > scene_width) ? scene_width as int - 64 : player.x;
+    player.y = (player.y < 0) ? 0 : (player.y as float + 64.0f > 1280.0f) ? 1216 : player.y;
+    
+    // Animate teleportation
+    if teleporting {
+        teleport_opacity -= 0.1f
+        
+        if teleport_opacity < 0.0f {
+            player = shadow.thaw()
+            teleporting = false
+        }
+    }
+    
+    // Animate item pick up
+    if item != Item::NONE {
+        target_screen_x float = 1792.0f + 14.0f
+        target_screen_y float = 32.0f + 14.0f
+        
+        item_screen_x = (item_screen_x < target_screen_x - 4.0f) ? item_screen_x + (target_screen_x - item_screen_x) / 4.0f : target_screen_x
+        item_screen_y = (item_screen_y > target_screen_y + 4.0f) ? item_screen_y + (target_screen_y - item_screen_y) / 4.0f : target_screen_y
+    }
+    
+    // Handle item pick up
+    each ItemSpawn in [item_spawns.items, item_spawns.length] {
+        if it.collision.intersecting(player.getAABB()) {
+            if item == it.item, break
+            item = it.item
+            item_screen_x = (&it as *Region).getX() as float - camera_x
+            item_screen_y = (&it as *Region).getY() as float - camera_y
+            cannon.rid()
+            break
+        }
+    }
+    
+    // Enable portal if obtained portal enabler
+    if portal_enabler.has && portal_enabler.value.collision.intersecting(player.getAABB()) {
+        exit_disabled = false
+        portal_enabler.rid()
+    }
+    
+    // Update camera
+    camera_x = (!teleporting) ? player.x as float + 32.0f - captViewWidth() / 2.0f : camera_x;
+    camera_x = (camera_x < 0.0f) ? 0.0f : (camera_x + captViewWidth() > scene_width) ? scene_width - captViewWidth() : camera_x;
+    
+    // Update enemies
+    updateSpiders()
+    updateSwordfish()
+    
+    // Update cannon
+    updateCannon()
+    
+    // Goto next scene if at exit portal
+    if exit.has && !exit_disabled && exit.value.collision.intersecting(player.getAABB()) {
+        gotoScene(++scene)
+    }
+}
+
+func on_key(key int, scancode int, action int, mods int) {
+    if action != GLFW_PRESS, return
+    
+    // Changing Control Schemes
+    if controls == wasd {
+        if key == GLFW_KEY_UP || key == GLFW_KEY_DOWN || key == GLFW_KEY_LEFT || key == GLFW_KEY_RIGHT,
+            controls = arrows
+        else if key == GLFW_KEY_W || key == GLFW_KEY_S || key == GLFW_KEY_A || key == GLFW_KEY_D,
+            controls = wasd
+    }
+    
+    if item == Item::STAR {
+        // Teleport to save-state
+        if key == controls.a, teleport()
+        
+        // Set save-state
+        if key == controls.b,
+            shadow = player.freeze(getImageForPlayer(player))
+    } else if item == Item::GUN {
+        if key == controls.a && !player.swimming {
+            // Shoot gun
+            particles.add(particle(smoke, player.x + player.direction * 128, player.y, 64, 64))
+            bullets.add(bullet(player.x + player.direction * 96 + 16, player.y + 28, player.direction * 20))
+        }
+    } else if item == Item::CANNON {
+        if key == controls.a && cannon.has {
+            c *Cannon = &cannon.value
+            // Ignite
+            particles.add(particle(flame, c.x + ((c.direction == 1) ? -4 : 120) - 16, c.y - 16, 64, 64))
+            
+            // Shoot cannon
+            if !cannon_ball.has {
+                cannon_ball.set(cannonBall(c.x + ((c.direction == 1) ? 128 : -40), c.y + 16, c.direction * 20))
+            }
+        }
+        
+        if key == controls.b {
+            // Place cannon
+            newCannon Cannon = cannon((player.direction == 1) ? player.x : player.x - 88, player.y - 128, player.direction)
+            
+            if collidingGround(newCannon.getAABB()) == null {
+                // Not obstructed
+                cannon.set(newCannon)
+            }
+        }
+    }
+    
+    if key == controls.pause, pause()
+    
+    k usize = 0; while k != 9 {
+        if key == GLFW_KEY_1 + k, gotoScene(1 + k)
+        k += 1
+    }
+}
+
+func on_draw {
+    #if show_fps
+        current_time double = glfwGetTime()
+        frame_count += 1
+        
+        if current_time - previous_time >= 1.0 {
+            printf('FPS: %d\n', frame_count)
+            frame_count = 0
+            previous_time = current_time
+        }
+    #end
+    
+    captClearColor(captColor(1.0f, 1.0f, 1.0f))
+    
+    unless is_paused {
+        sky_shift = cast float (glfwGetTime() * 1000.0f - accumulated_pause_time * 1000.0f) / 100.0f % captViewWidth()
+    }
+    captDrawTexture(sky, ceilf(0.0f - sky_shift), 0.0f, captViewWidth(), captViewHeight())
+    captDrawTexture(sky, 0.0f - sky_shift + captViewWidth(), 0.0f, captViewWidth(), captViewHeight())
+    
+    // Draw background portion of lake
+    each Lake in [lakes.items, lakes.length], drawLakeBehind(it)
+    
+    // Draw exit portal if one exists
+    if exit.has {
+        drawFromCamera(exit_disabled ? disabled_portal.now() : inwards_portal.now(),
+            (&exit as *Region).getVisualX() as float,
+            (&exit as *Region).getVisualY() as float,
+            (&exit as *Region).getVisualWidth() as float,
+            (&exit as *Region).getVisualHeight() as float)
+    }
+    
+    // Draw entrance portal if one exists
+    if entrance.has {
+        drawFromCamera(outwards_portal.now(),
+            (&entrance as *Region).getVisualX() as float,
+            (&entrance as *Region).getVisualY() as float,
+            (&entrance as *Region).getVisualWidth() as float,
+            (&entrance as *Region).getVisualHeight() as float)
+    }
+    
+    each Platform in [platforms.items, platforms.length], drawPlatform(it)
+    each Bridge in [bridges.items, bridges.length], drawBridge(it)
+    each Lake in [lakes.items, lakes.length], drawLakeUpFront(it)
+    each Bullet in [bullets.items, bullets.length], drawFromCamera(bullet, it.x as float, it.y as float, 8.0f, 8.0f)
+    
+    if cannon.has,
+        drawFromCameraEx(cannon_idle, cannon.value.x as float, cannon.value.y as float, 152.0f * cannon.value.direction as float, 72.0f)
+    
+    if cannon_ball.has,
+        drawFromCamera(ball, cannon_ball.value.x as float, cannon_ball.value.y as float, 32.0f, 32.0f)
+    
+    each Particle in [particles.items, particles.length],
+        drawFromCamera(it.now(), (&it as *Region).getVisualX() as float, (&it as *Region).getVisualY() as float, (&it as *Region).getVisualWidth() as float, (&it as *Region).getVisualHeight() as float)
+    
+    if portal_enabler.has {
+        r *Region = &portal_enabler.value as *Region
+        drawFromCamera(enabler.now(), r.getVisualX() as float, r.getVisualY() as float, r.getVisualWidth() as float, r.getVisualHeight() as float)
+    }
+    
+    each ItemSpawn in [item_spawns.items, item_spawns.length] {
+        if item == it.item, continue
+        
+        r *Region = &it as *Region
+        drawFromCamera(getImageForItem(it.item), r.getVisualX() as float, r.getVisualY() as float, r.getVisualWidth() as float, r.getVisualHeight() as float)
+    }
+    
+    each Spider in [spiders.items, spiders.length],
+        drawFromCameraEx(it.now(), it.x as float, it.y as float - 32.0f, it.vx as float * 64.0f, 64.0f)
+    
+    each Swordfish in [swordfishes.items, swordfishes.length],
+        drawFromCameraEx(it.now(), it.x as float, it.y as float, it.vx as float * 256.0f, 64.0f)
+    
+    // Draw player shadow for save-state powerup
+    if item == Item::STAR, drawPlayer(shadow, 0.5f)
+    
+    // If alive render player otherwise render death animation
+    if is_dead, drawDeath()
+    else        drawPlayer(player, teleporting ? teleport_opacity : 1.0f)
+    
+    // Draw powerup slot
+    captDrawTexture(slot, 1792.0f, 32.0f, 96.0f, 96.0f)
+    
+    // Draw acquired powerup
+    if !is_dead && item != Item::NONE,
+        captDrawTexture(getImageForItem(item), item_screen_x, item_screen_y, 64.0f, 64.0f)
+    
+    if scene == 8,
+        drawFromCamera(win, 576.0f - 224.0f, 192.0f, 512.0f, 128.0f)
+}

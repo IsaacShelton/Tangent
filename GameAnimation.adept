@@ -1,0 +1,71 @@
+
+import 'addons.adept'
+
+struct GameAnimation (frames *CaptTexture, length, currentFrame, ticker, interval usize) {
+    func destroy {
+        each CaptTexture in [this.frames, this.length], it.free()
+        delete this.frames
+    }
+    
+    func reset {
+        this.currentFrame = 0
+        this.ticker = 0
+    }
+    
+    func now CaptTexture {
+        return this.frames[this.currentFrame]
+    }
+    
+    func update {
+        if ++this.ticker > this.interval {
+            this.ticker = 0
+            this.advance()
+        }
+    }
+    
+    func advance {
+        if ++this.currentFrame == this.length, this.currentFrame = 0
+    }
+    
+    func newInstance GameAnimation {
+        anim GameAnimation = *this
+        anim.currentFrame = 0
+        anim.ticker = 0
+        return anim
+    }
+}
+
+func gameAnimation(pattern String, beginning, end, tickerInterval int) GameAnimation {
+    anim GameAnimation
+    anim.interval = tickerInterval
+    
+    if beginning <= end {
+        anim.length = end - beginning + 1
+        anim.frames = new CaptTexture * anim.length
+        
+        n int = beginning; while n <= end {
+            anim.frames[n - beginning] = captTexture(pattern % n, false)
+            n += 1
+        }
+    } else {
+        anim.length = beginning - end + 1
+        anim.frames = new CaptTexture * anim.length
+        
+        n int = end; while n <= beginning {
+            anim.frames[anim.length - n + end - 1] = captTexture(pattern.clone() % n, false)
+            n += 1
+        }
+    }
+    
+    return anim
+}
+
+func gameAnimation(frames *CaptTexture, length usize, interval usize) GameAnimation {
+    anim GameAnimation = undef
+    anim.frames = frames
+    anim.length = length
+    anim.currentFrame = 0
+    anim.ticker = 0
+    anim.interval = interval
+    return anim
+}

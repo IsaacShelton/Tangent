@@ -1,0 +1,159 @@
+
+func drawFromCamera(texture CaptTexture, x, y, w, h float) {
+    captDrawTexture(texture, x - camera_x, y - camera_y, w, h)
+}
+
+func drawFromCameraEx(texture CaptTexture, x, y, w, h float) {
+    if w < 0, x -= w
+    if h < 0, y -= h
+    captDrawTexture(texture, x - camera_x, y - camera_y, w, h)
+}
+
+func drawLakeBehind(lake Lake) {
+    y int = (&lake as *Region).getY(); while y < (&lake as *Region).getMaxY() {
+        x int = (&lake as *Region).getX(); while x < (&lake as *Region).getMaxX() {
+            drawFromCamera((y == (&lake as *Region).getY()) ? wave.now() : water, x as float, y as float, 64.0f, 64.0f)
+            x += 64
+        }
+        y += 64
+    }
+}
+
+func drawLakeUpFront(lake Lake) {
+    y int = (&lake as *Region).getY(); while y < (&lake as *Region).getMaxY() {
+        x int = (&lake as *Region).getX(); while x < (&lake as *Region).getMaxX() {
+            opacity float = 0.0f
+            tile AABB = AABB(x, y, 64, 64)
+            
+            if opacity == 0.0f, each Platform in [platforms.items, platforms.length] {
+                if tile.intersecting(it.visual) {
+                    opacity = 0.9f
+                    break
+                }
+            }
+            
+            if opacity == 0.0f, each Bridge in [bridges.items, bridges.length] {
+                if tile.intersecting(it.visual) {
+                    opacity = 0.9f
+                    break
+                }
+            }
+            
+            if opacity == 0.0f && exit.has && tile.intersecting(exit.value.visual),
+                opacity = 0.5f
+            
+            if opacity == 0.0f,
+                x += 64; continue
+            
+            captDrawOpacity(opacity)
+            drawFromCamera((y == (&lake as *Region).getY()) ? wave.now() : water, x as float, y as float, 64.0f, 64.0f)
+            x += 64
+        }
+        y += 64
+    }
+    captDrawOpacity(1.0f)
+}
+
+func drawPlatform(platform POD Platform) {
+    y int = (&platform as *Region).getY(); while y < (&platform as *Region).getMaxY() {
+        x int = (&platform as *Region).getX(); while x < (&platform as *Region).getMaxX() {
+            
+            if x == (&platform as *Region).getX() && y == (&platform as *Region).getY() {
+                drawFromCamera(platform_north_west, x as float, y as float, 64.0f, 64.0f)
+            } else if x == (&platform as *Region).getX() && y + 64 >= (&platform as *Region).getMaxY() {
+                drawFromCamera(platform_south_west, x as float, y as float, 64.0f, 64.0f)
+            } else if x + 64 >= (&platform as *Region).getMaxX() && y == (&platform as *Region).getY() {
+                drawFromCamera(platform_north_east, x as float, y as float, 64.0f, 64.0f)
+            } else if x + 64 >= (&platform as *Region).getMaxX() && y + 64 >= (&platform as *Region).getMaxY() {
+                drawFromCamera(platform_south_east, x as float, y as float, 64.0f, 64.0f)
+            } else if x == (&platform as *Region).getX() {
+                drawFromCamera(platform_west, x as float, y as float, 64.0f, 64.0f)
+            } else if y == (&platform as *Region).getY() {
+                drawFromCamera(platform_north, x as float, y as float, 64.0f, 64.0f)
+            } else if x + 64 >= (&platform as *Region).getMaxX() {
+                drawFromCamera(platform_east, x as float, y as float, 64.0f, 64.0f)
+            } else if y + 64 >= (&platform as *Region).getMaxY() {
+                drawFromCamera(platform_south, x as float, y as float, 64.0f, 64.0f)
+            } else {
+                drawFromCamera(platform_center, x as float, y as float, 64.0f, 64.0f)
+            }
+            
+            x += 64
+        }
+        y += 64
+    }
+    
+    each Decoration in [platform.decorations.items, platform.decorations.length] {
+        drawFromCamera(it.texture, (&it as *Region).getX() as float, (&it as *Region).getY() as float,
+            (&it as *Region).getWidth() as float, (&it as *Region).getHeight() as float)
+    }
+}
+
+func drawBridge(bridge POD Bridge) {
+    if (&bridge as *Region).getWidth() / 64 == 2 {
+        drawFromCamera(bridge0, (&bridge as *Region).getX() as float, (&bridge as *Region).getY() as float, 64.0f, 64.0f)
+        drawFromCamera(bridge1, (&bridge as *Region).getX() as float + 64.0f, (&bridge as *Region).getY() as float, 64.0f, 64.0f)
+        return
+    }
+    
+    x int = (&bridge as *Region).getX(); while x < (&bridge as *Region).getMaxX() {
+        drawFromCamera(bridge0, x as float, (&bridge as *Region).getY() as float, 64.0f, 64.0f)
+        x += 64
+    }
+}
+
+func drawPlayer(p POD Player, opacity float) {
+    image GameImageEx = p.frozen_image.isValid() ? p.frozen_image : getImageForPlayer(p)
+    captDrawOpacity(opacity)
+    
+    drawFromCameraEx(image.texture, p.x as float + image.x_offset as float, p.y as float + image.y_offset as float,
+        p.direction as float * image.width as float, image.height as float);
+    
+    if !p.swimming && p.parachuting,
+        drawFromCamera((item == Item::CANNON) ? cannoneer_parachute : parachute, p.x as float, p.y as float - 64.0f, 64.0f, 64.0f)
+    
+    captDrawOpacity(1.0f)
+}
+
+func drawDeath {
+    drawFromCameraEx(death_image.texture, death_x + death_image.x_offset as float, death_y + death_image.y_offset as float,
+        death_image.width as float, death_image.height as float)
+}
+
+func getImageForPlayer(player POD Player) GameImageEx {
+    if item == Item::GUN {
+        if player.swimming,
+            return gameImageEx(gun_swim.now(), (player.direction == 1) ? 0 : -8, -8, 72, 72)
+        
+        unless player.moving,
+            return gameImageEx(gun_idle, (player.direction == 1) ? 0 : -48, -8, 112, 72)
+        
+        return gameImageEx(gun_walk.now(), (player.direction == 1) ? 0 : -48, -8, 112, 72)
+    }
+    
+    if item == Item::CANNON {
+        if player.swimming,
+            return gameImageEx(cannoneer_swim.now(), (player.direction == 1) ? 0 : -8, -8, 72, 72)
+        
+        unless player.moving,
+            return gameImageEx(cannoneer_idle, 0, -24, 64, 88)
+        
+        return gameImageEx(cannoneer_walk.now(), 0, -24, 64, 88)
+    }
+    
+    unless player.moving,
+        return gameImageEx(idle, 0, 0, 64, 64)
+    
+    if player.swimming,
+        return gameImageEx(swim.now(), 0, 0, 64, 64)
+    
+    return gameImageEx(walk.now(), 0, 0, 64, 64)
+}
+
+func getImageForItem(item Item) CaptTexture {
+    if item == Item::STAR,   return star
+    if item == Item::WING,   return wing
+    if item == Item::GUN,    return gun
+    if item == Item::CANNON, return cannon_power
+    return stump
+}
