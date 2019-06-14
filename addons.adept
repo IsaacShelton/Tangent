@@ -1,5 +1,5 @@
 
-import '../captain/captain.adept'
+import 'captain_prototype/captain.adept'
 
 foreign stbi_failure_reason() *ubyte
 

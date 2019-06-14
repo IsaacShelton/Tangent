@@ -1,0 +1,591 @@
+
+import 'glfw/glfw.adept'
+import 'opengl/opengl.adept'
+import 'stb/image.adept'
+import 'sys/ctime.adept'
+import 'sys/cstdio.adept'
+import 'sys/cstring.adept'
+import '2.2/Matrix4f.adept'
+import '2.2/String.adept'
+
+_captain_window *GLFWwindow
+_captain_setup func() void
+_captain_exit func() void
+_captain_draw func() void
+_captain_step func() void
+_captain_step_fps uint
+_captain_click func(float, float, int) void
+_captain_click_use_view_mouse bool
+_captain_release func(float, float, int) void
+_captain_release_use_view_mouse bool
+_captain_key func(int, int, int, int) void
+_captain_shader CaptShader
+_captain_display_ratio float
+_captain_view_width float
+_captain_view_height float
+_captain_custom_view bool
+_captain_resizable bool
+_captain_typicals *float
+_captain_typicals_length usize
+_captain_typicals_capacity usize
+_captain_models *CaptFrameModel
+_captain_models_length usize
+_captain_models_capacity usize
+_captain_shader_transformation_location GLint
+_captain_sprite_models *CaptModel
+_captain_sprite_models_length usize
+_captain_sprite_models_capacity usize
+
+func captPrepare successful {
+    _captain_window = null
+    _captain_setup = null
+    _captain_exit = null
+    _captain_draw = null
+    _captain_step = null
+    _captain_step_fps = 60
+    _captain_click = null
+    _captain_release = null
+    _captain_display_ratio = 0.0f
+    _captain_view_width = 0.0f
+    _captain_view_height = 0.0f
+    _captain_custom_view = false
+    _captain_resizable = true
+    _captain_typicals = null
+    _captain_typicals_length = 0
+    _captain_typicals_capacity = 0
+    _captain_models = null
+    _captain_models_length = 0
+    _captain_models_capacity = 0
+    _captain_shader_transformation_location = 0
+    _captain_sprite_models = null
+    _captain_sprite_models_length = 0
+    _captain_sprite_models_capacity = 0
+    return glfwInit() != 0
+}
+
+func captAddTypical(in w, h float) {
+    // Marks typical dimensions so that shared models can be
+    // used between draw calls
+    
+    if _captain_typicals_length == _captain_typicals_capacity {
+        if _captain_typicals_capacity == 0,
+            _captain_typicals_capacity = 4
+        else
+            _captain_typicals_capacity *= 2
+        new_typicals *float = new float * (2 * _captain_typicals_capacity)
+        memcpy(new_typicals, _captain_typicals, _captain_typicals_length * 2 * sizeof float)
+        delete _captain_typicals
+        _captain_typicals = new_typicals
+    }
+    
+    _captain_typicals[_captain_typicals_length * 2] = w
+    _captain_typicals[_captain_typicals_length * 2 + 1] = h
+    _captain_typicals_length += 1
+}
+
+func captStart {
+    captStart('', 640, 480, false)
+}
+
+func captStart(in title *ubyte) {
+    captStart(title, 640, 480, false)
+}
+
+func captStart(in fullscreen bool) {
+    if fullscreen, captStart('', 0, 0, true)
+    else           captStart('', 640, 480, false)
+}
+
+func captStart(in title *ubyte, in fullscreen bool) {
+    if fullscreen, captStart(title, 0, 0, true)
+    else           captStart(title, 640, 480, false)
+}
+
+func captStart(in title *ubyte, in width, height int, in fullscreen bool) {
+    #if __macos__
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    #end
+    
+    unless _captain_resizable {
+        glfwWindowHint(GLFW_RESIZABLE, GL_FALSE)
+    }
+    
+    monitor *GLFWmonitor = null
+    
+    if fullscreen {
+        monitor = glfwGetPrimaryMonitor()
+    }
+    
+    if width == 0 && height == 0 {
+        video_mode *GLFWvidmode = glfwGetVideoMode(monitor)
+        width = video_mode.width
+        height = video_mode.height
+    }
+    
+    _captain_window = glfwCreateWindow(width, height, title, monitor, null)
+    
+    if _captain_window == null {
+        glfwTerminate()
+        return
+    }
+    
+    glfwMakeContextCurrent(_captain_window)
+    glfwSwapInterval(1)
+    openglInit()
+    
+    // Add typical dimensions as frame models
+    repeat _captain_typicals_length {
+        captAddFrameModel(_captain_typicals[idx * 2], _captain_typicals[idx * 2 + 1])
+    }
+    
+    glEnable(GL_BLEND)
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+    _captain_shader.create('#version 400 core\nlayout(location = 0) in vec3 vp;\nlayout(location = 1) in vec2 texture_coords;\nuniform mat4 projection;\nuniform mat4 transformation;\nout vec2 uvs;\nvoid main() {\nuvs = texture_coords;\ngl_Position = projection * transformation * vec4(vp, 1.0);\n}',
+            '#version 400 core\nin vec2 uvs;\nout vec4 color;\nuniform sampler2D texture_sampler;\nuniform float opacity;\nvoid main(void) {\ncolor = texture(texture_sampler, uvs);\ncolor.a *= opacity;\nif(color.a == 0) discard;\n}')
+    _captain_shader_transformation_location = _captain_shader.getUniformLocation('transformation')
+    
+    win_width, win_height int = undef
+    
+    unless _captain_custom_view {
+        glfwGetFramebufferSize(_captain_window, &win_width, &win_height)
+        _captain_display_ratio = cast float win_width / cast float win_height
+        _captain_view_width = 800.0f * _captain_display_ratio
+        _captain_view_height = 800.0f
+    }
+    
+    if _captain_setup as ptr, _captain_setup()
+    
+    glfwSetMouseButtonCallback(_captain_window, func &_captMouseCallback)
+    glfwSetKeyCallback(_captain_window, func &_captKeyCallback)
+    
+    previous_time double = glfwGetTime()
+    projection Matrix4f
+    
+    until glfwWindowShouldClose(_captain_window) {
+        if glfwGetTime() - previous_time > 1.0 / cast float _captain_step_fps {
+            if _captain_step as ptr, _captain_step()
+            previous_time += 1.0 / cast float _captain_step_fps
+        }
+        
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f)
+        glClear(GL_COLOR_BUFFER_BIT)
+    
+        glfwGetFramebufferSize(_captain_window, &win_width, &win_height)
+        glViewport(0, 0, win_width, win_height)
+        _captain_display_ratio = cast float win_width / cast float win_height
+        
+        unless _captain_custom_view {
+            _captain_view_width = 800.0f * _captain_display_ratio
+            _captain_view_height = 800.0f
+        }
+        
+        projection.ortho(0.0f, _captain_view_width, _captain_view_height, 0.0f, 1.0f, -1.0f)
+        
+        _captain_shader.use()
+        _captain_shader.uploadMatrix4f(_captain_shader.getUniformLocation('projection'), projection)
+        _captain_shader.uploadFloat(_captain_shader.getUniformLocation('opacity'), 1.0f)
+        
+        if _captain_draw as ptr, _captain_draw()
+                
+        glfwSwapBuffers(_captain_window)
+        glfwPollEvents()
+    }
+    
+    if _captain_exit as ptr, _captain_exit()
+    
+    each CaptFrameModel in [_captain_models, _captain_models_length] {
+        it.model.free()
+    }
+    
+    delete _captain_models
+    delete _captain_typicals
+    _captain_shader.free()
+    
+    glfwDestroyWindow(_captain_window)
+    glfwTerminate()
+}
+
+func _captMouseCallback(window *GLFWwindow, button int, action int, mods int) {
+    if action == GLFW_PRESS && _captain_click as ptr {
+        mouse_x, mouse_y float = undef
+        if _captain_click_use_view_mouse, captMouseViewPosition(&mouse_x, &mouse_y)
+        else                              captMouseFramePosition(&mouse_x, &mouse_y)
+        
+        
+        _captain_click(mouse_x, mouse_y, button + 1)
+    } else if action == GLFW_RELEASE && _captain_release as ptr {
+        mouse_x, mouse_y float = undef
+        if _captain_release_use_view_mouse, captMouseViewPosition(&mouse_x, &mouse_y)
+        else                                captMouseFramePosition(&mouse_x, &mouse_y)
+        
+        _captain_release(mouse_x, mouse_y, button + 1)
+    }
+}
+
+func _captKeyCallback(window *GLFWwindow, k, s, a, m int) {
+    if _captain_key as ptr, _captain_key(k, s, a, m)
+}
+
+func captViewWidth float {
+    return _captain_view_width
+}
+
+func captViewHeight float {
+    return _captain_view_height
+}
+
+func captFrameWidth int {
+    w, h int = undef
+    glfwGetFramebufferSize(_captain_window, &w, &h)
+    return w
+}
+
+func captFrameHeight int {
+    w, h int = undef
+    glfwGetFramebufferSize(_captain_window, &w, &h)
+    return h
+}
+
+func captCustomView(width, height float) {
+    _captain_view_width = width
+    _captain_view_height = height
+    _captain_custom_view = true
+}
+
+func captDefaultView {
+    _captain_custom_view = false
+}
+
+func captMouseFramePosition(out x, y *float) {
+    glfwGetCursorPos(_captain_window, undef x_d double, undef y_d double)
+    *x = x_d as float
+    *y = y_d as float
+}
+
+func captMouseFramePosition(out x, y *double) {
+    glfwGetCursorPos(_captain_window, x, y)
+}
+
+func captMouseViewPosition(out x, y *float) {
+    glfwGetCursorPos(_captain_window, undef x_d double, undef y_d double)
+    *x = x_d as float * captViewWidth() / captFrameWidth() as float
+    *y = y_d as float * captViewHeight() / captFrameHeight() as float
+}
+
+func captResizable(resizable bool) {
+    _captain_resizable = resizable
+}
+
+func captOnSetup(in on_setup_func func() void) {
+    _captain_setup = on_setup_func
+}
+
+func captOnExit(in on_exit_func func() void) {
+    _captain_exit = on_exit_func
+}
+
+func captOnDraw(in on_draw_func func() void) {
+    _captain_draw = on_draw_func
+}
+
+func captOnStep(in on_step_func func() void) {
+    _captain_step = on_step_func
+    _captain_step_fps = 60
+}
+
+func captOnStep(in on_step_func func() void, in step_fps uint) {
+    _captain_step = on_step_func
+    
+    if step_fps == 0, _captain_step_fps = 1000000
+    else              _captain_step_fps = step_fps
+}
+
+func captOnClick(in on_click_func func(float, float, int) void, use_mouse_view_coords bool) {
+    _captain_click = on_click_func
+    _captain_click_use_view_mouse = use_mouse_view_coords
+}
+
+func captOnRelease(in on_release_func func(float, float, int) void, use_mouse_view_coords bool) {
+    _captain_release = on_release_func
+    _captain_release_use_view_mouse = use_mouse_view_coords
+}
+
+func captOnKey(in on_key_func func(int, int, int, int) void) {
+    _captain_key = on_key_func
+}
+
+struct CaptColor (r, g, b, a float)
+
+func captColor(in r, g, b float) CaptColor {
+    return captColor(r, g, b, 1.0f)
+}
+
+func captColor(in r, g, b, a float) CaptColor {
+    color CaptColor = undef
+    color.r = r; color.g = g
+    color.b = b; color.a = a
+    return color
+}
+
+func captColor(in r, g, b int) CaptColor {
+    return captColor(r, g, b, 255)
+}
+
+func captColor(in r, g, b, a int) CaptColor {
+    color CaptColor = undef
+    color.r = cast float r / 255.0f; color.g = cast float g / 255.0f
+    color.b = cast float b / 255.0f; color.a = cast float a / 255.0f
+    return color
+}
+
+func captClearColor(in color CaptColor) {
+    glClearColor(color.r, color.g, color.b, color.a)
+    glClear(GL_COLOR_BUFFER_BIT)
+}
+
+struct CaptTexture (id uint) {
+    func invalidate {
+        this.id = 0
+    }
+    
+    func isValid bool {
+        return this.id != 0
+    }
+    
+    func free {
+        if this.id != 0, glDeleteTextures(1, &this.id)
+    }
+}
+
+func captTexture(filename *ubyte) CaptTexture {
+    return captTexture(filename, true)
+}
+
+func captTexture(filename *ubyte, approximate bool) CaptTexture {
+    texture CaptTexture = undef
+    
+    x, y, n int = undef
+    image *ubyte = stbi_load(filename, &x, &y, &n, 4)
+
+    if image == null, texture.id = 0; return texture
+    
+    blur_mode GLenum = GL_NEAREST
+    if approximate, blur_mode = GL_LINEAR
+
+    glGenTextures(1, &texture.id)
+    glBindTexture(GL_TEXTURE_2D, texture.id)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, blur_mode)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, blur_mode)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, image)
+    glBindTexture(GL_TEXTURE_2D, 0ui)
+    stbi_image_free(image)
+    return texture
+}
+
+struct CaptModel (vao GLuint, vertices_vbo GLuint, uvs_vbo GLuint, texture_id GLuint, triangle_count int) {
+    func create(points *float, points_length usize, uvs *float, uvs_length usize) {
+        this.triangle_count = cast int(points_length / 3ui)
+        
+        this.vertices_vbo = 0ui
+        glGenBuffers(1, &this.vertices_vbo)
+        glBindBuffer(GL_ARRAY_BUFFER, this.vertices_vbo)
+        glBufferData(GL_ARRAY_BUFFER, cast int(sizeof float * points_length), points, GL_STATIC_DRAW)
+        
+        this.uvs_vbo = 0ui
+        glGenBuffers(1, &this.uvs_vbo)
+        glBindBuffer(GL_ARRAY_BUFFER, this.uvs_vbo)
+        glBufferData(GL_ARRAY_BUFFER, cast int(sizeof float * uvs_length), uvs, GL_STATIC_DRAW)
+        
+        glGenVertexArrays(1, &this.vao)
+        glBindVertexArray(this.vao)
+        
+        glEnableVertexAttribArray(0ui)
+        glBindBuffer(GL_ARRAY_BUFFER, this.vertices_vbo)
+        glVertexAttribPointer(0ui, 3, GL_FLOAT, GL_FALSE, 0, null)
+        
+        glEnableVertexAttribArray(1ui)
+        glBindBuffer(GL_ARRAY_BUFFER, this.uvs_vbo)
+        glVertexAttribPointer(1ui, 2, GL_FLOAT, GL_FALSE, 0, null)
+        
+        glBindBuffer(GL_ARRAY_BUFFER, 0ui)
+        glBindVertexArray(0ui)
+    }
+    
+    func draw {
+        glBindVertexArray(this.vao)
+        glDrawArrays(GL_TRIANGLES, 0, this.triangle_count)
+    }
+    
+    func free {
+        glDeleteBuffers(1, &this.vertices_vbo)
+        glDeleteBuffers(1, &this.uvs_vbo)
+        glDeleteVertexArrays(1, &this.vao)
+    }
+}
+
+func captBindTexture(texture CaptTexture) void {
+    glActiveTexture(GL_TEXTURE0)
+    glBindTexture(GL_TEXTURE_2D, texture.id)
+}
+
+struct CaptShader (program GLuint, vertex GLuint, fragment GLuint) {
+    func create(vertex_code *ubyte, fragment_code *ubyte) {
+        log_length int
+        log_message *ubyte
+        status GLint
+    
+        this.vertex = glCreateShader(GL_VERTEX_SHADER)
+        glShaderSource(this.vertex, 1, &vertex_code, null)
+        glCompileShader(this.vertex)
+        glGetShaderiv(this.vertex, GL_COMPILE_STATUS, &status)
+    
+        if status == 0 {
+            puts('Failed to compile vertex shader')
+            log_message = malloc(1024)
+            glGetShaderInfoLog(this.vertex, 1024, &log_length, log_message)
+            if log_length != 0, puts(log_message)
+            free(log_message)
+        }
+    
+        this.fragment = glCreateShader(GL_FRAGMENT_SHADER)
+        glShaderSource(this.fragment, 1, &fragment_code, null)
+        glCompileShader(this.fragment)
+        glGetShaderiv(this.fragment, GL_COMPILE_STATUS, &status)
+    
+        if status == 0 {
+            puts('Failed to compile fragment shader')
+            log_message = malloc(1024)
+            glGetShaderInfoLog(this.fragment, 1024, &log_length, log_message)
+            if log_length != 0, puts(log_message)
+            free(log_message)
+        }
+    
+        this.program = glCreateProgram()
+        glAttachShader(this.program, this.vertex)
+        glAttachShader(this.program, this.fragment)
+        glLinkProgram(this.program)
+        glValidateProgram(this.program)
+    }
+    
+    func use {
+        glUseProgram(this.program)
+    }
+    
+    func free {
+        glDetachShader(this.program, this.vertex)
+        glDetachShader(this.program, this.fragment)
+        glDeleteShader(this.vertex)
+        glDeleteShader(this.fragment)
+        glDeleteProgram(this.program)
+    }
+    
+    func getUniformLocation(name *ubyte) GLint {
+        return glGetUniformLocation(this.program, name)
+    }
+    
+    func uploadFloat(location GLint, value float) {
+        glUniform1f(location, value)
+    }
+    
+    func uploadMatrix4f(location GLint, matrix *Matrix4f) {
+        if matrix == null, return
+        glUniformMatrix4fv(location, 1, false, &matrix.array as *float)
+    }
+    
+    func uploadMatrix4f(location GLint, matrix Matrix4f) {
+        glUniformMatrix4fv(location, 1, false, &matrix.array as *float)
+    }
+}
+
+func captDrawTexture(in texture CaptTexture, in x, y, w, h float) {
+    transformation Matrix4f = undef
+    transformation.translateFromIdentity(x, y, 0.0f)
+    _captain_shader.uploadMatrix4f(_captain_shader_transformation_location, transformation)
+    
+    each CaptFrameModel in [_captain_models, _captain_models_length] {
+        if it.width != w, continue
+        if it.height != h, continue
+        captBindTexture(texture)
+        it.model.draw()
+        return
+    }
+    
+    temporary CaptModel = captTemporaryModel(w, h)
+    captBindTexture(texture)
+    temporary.draw()
+    temporary.free()
+}
+
+func captDrawOpacity(in value float) {
+    _captain_shader.uploadFloat(_captain_shader.getUniformLocation('opacity'), value)
+}
+
+struct CaptFrameModel (model CaptModel, width, height float)
+
+func captAddFrameModel(in w, h float) *CaptModel {
+    frameModel CaptFrameModel
+    frameModel.model = captTemporaryModel(w, h)
+    frameModel.width = w
+    frameModel.height = h
+    
+    if _captain_models_length == _captain_models_capacity {
+        if _captain_models_capacity == 0,
+            _captain_models_capacity = 8
+        else
+            _captain_models_capacity *= 2
+        new_models *CaptFrameModel = new CaptFrameModel * _captain_models_capacity
+        memcpy(new_models, _captain_models, _captain_models_length * sizeof CaptFrameModel)
+        delete _captain_models
+        _captain_models = new_models
+    }
+    
+    _captain_models[_captain_models_length] = frameModel
+    _captain_models_length += 1
+    return &_captain_models[_captain_models_length - 1].model
+}
+
+func captTemporaryModel(in w, h float) CaptModel {
+    points_storage 18 float = undef
+    uv_data_storage 12 float = undef
+
+    points *float = &points_storage as *float
+    points_length usize = 18
+    uv_data *float = &uv_data_storage as *float
+    uv_data_length usize = 12
+    
+    points[0]  = 0.0f;   points[1]  = h;      points[2]  = 0.0f
+    points[3]  = 0.0f;   points[4]  = 0.0f;   points[5]  = 0.0f
+    points[6]  = w;      points[7]  = 0.0f;   points[8]  = 0.0f
+    points[9]  = 0.0f;   points[10] = h;      points[11] = 0.0f
+    points[12] = w;      points[13] = 0.0f;   points[14] = 0.0f
+    points[15] = w;      points[16] = h;      points[17] = 0.0f
+
+    uv_data[0]  = 0.0f; uv_data[1]  = 1.0f
+    uv_data[2]  = 0.0f; uv_data[3]  = 0.0f
+    uv_data[4]  = 1.0f; uv_data[5]  = 0.0f
+    uv_data[6]  = 0.0f; uv_data[7]  = 1.0f
+    uv_data[8]  = 1.0f; uv_data[9]  = 0.0f
+    uv_data[10] = 1.0f; uv_data[11] = 1.0f
+    
+    model CaptModel
+    model.create(points, points_length, uv_data, uv_data_length)
+    return model
+}
+
+func captRandomize {
+    srand(time(null))
+}
+
+func captRandom double {
+    return rand() as double / RAND_MAX as double
+}
+
+func captKeyHeld(key int) bool {
+    return glfwGetKey(_captain_window, key) == GLFW_PRESS
+}

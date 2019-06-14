@@ -25,7 +25,7 @@ import 'draw.adept'
 
 import '2.2/basics.adept'
 import '2.2/List.adept'
-import '../captain/captain.adept'
+import 'captain_prototype/captain.adept'
 
 func main {
     unless captPrepare(), return
