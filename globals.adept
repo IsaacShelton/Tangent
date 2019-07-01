@@ -110,7 +110,12 @@ cannon_ball <CannonBall> Optional
 #end
 
 func loadAssets {
-    assetsFolder String = "/Users/isaac/AdeptProjects/captain2d/Tangent/assets/"
+    #if __macos__
+        assetsFolder String = "/Users/isaac/AdeptProjects/captain2d/Tangent/assets/"
+    #else
+        assetsFolder String = "C:\\Users\\isaac\\AdeptProjects\\Tangent\\assets/"
+    #end
+    
     idle = captTexture(assetsFolder + "idle.png", false)
     death = captTexture(assetsFolder + "death.png", false)
     gun_idle = captTexture(assetsFolder + "gunIdle.png", false)

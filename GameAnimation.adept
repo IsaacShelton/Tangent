@@ -44,7 +44,7 @@ func gameAnimation(pattern String, beginning, end, tickerInterval int) GameAnima
         anim.frames = new CaptTexture * anim.length
         
         n int = beginning; while n <= end {
-            anim.frames[n - beginning] = captTexture(pattern % n, false)
+            anim.frames[n - beginning] = captTexture(pattern.clone() % n, false)
             n += 1
         }
     } else {

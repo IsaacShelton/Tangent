@@ -347,7 +347,7 @@ func captClearColor(in color CaptColor) {
     glClear(GL_COLOR_BUFFER_BIT)
 }
 
-struct CaptTexture (id uint) {
+struct CaptTexture (id GLuint) {
     func invalidate {
         this.id = 0
     }

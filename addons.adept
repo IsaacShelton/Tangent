@@ -1,7 +1,6 @@
 
+import 'sys/cerrno.adept'
 import 'captain_prototype/captain.adept'
-
-foreign stbi_failure_reason() *ubyte
 
 func captTexture(filename String) CaptTexture {
     // HACK: Cause compiler calls __defer__ right before 'return'
@@ -17,9 +16,6 @@ func captTexture(filename String) CaptTexture {
     
     return texture
 }
-
-external errno int
-foreign strerror(int) *ubyte
 
 func captTexture(filename String, appoximate bool) CaptTexture {
     // HACK: Cause compiler calls __defer__ right before 'return'
