@@ -1,52 +1,17 @@
 
 struct Region (collision AABB, visual AABB) {
-    func getX int {
-        return this.collision.x
-    }
-    
-    func getY int {
-        return this.collision.y
-    }
-    
-    func getMaxX int {
-        return this.collision.x + this.collision.w
-    }
-    
-    func getMaxY int {
-        return this.collision.y + this.collision.h
-    }
-    
-    func getVisualX int {
-        return this.visual.x
-    }
-    
-    func getVisualY int {
-        return this.visual.y
-    }
-    
-    func getVisualMaxX int {
-        return this.visual.x + this.visual.w
-    }
-    
-    func getVisualMaxY int {
-        return this.visual.y + this.visual.h
-    }
-    
-    func getWidth int {
-        return this.collision.w
-    }
-    
-    func getHeight int {
-        return this.collision.h
-    }
-    
-    func getVisualWidth int {
-        return this.visual.w
-    }
-    
-    func getVisualHeight int {
-        return this.visual.h
-    }
+    func getX int = this.collision.x
+    func getY int = this.collision.y
+    func getMaxX int = this.collision.x + this.collision.w
+    func getMaxY int = this.collision.y + this.collision.h
+    func getVisualX int = this.visual.x
+    func getVisualY int = this.visual.y
+    func getVisualMaxX int = this.visual.x + this.visual.w
+    func getVisualMaxY int = this.visual.y + this.visual.h
+    func getWidth int = this.collision.w
+    func getHeight int = this.collision.h
+    func getVisualWidth int = this.visual.w
+    func getVisualHeight int = this.visual.h
 }
 
 func region(x, y, w, h int) Region {

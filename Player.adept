@@ -53,11 +53,9 @@ struct Player (
         return newPlayer
     }
     
-    func getAABB AABB {
-        return AABB(this.x, this.y, 64, 64)
-    }
+    func getAABB AABB
+        = AABB(this.x, this.y, 64, 64)
     
-    func getAABB(adj_x, adj_y int) AABB {
-        return AABB(this.x + adj_x, this.y + adj_y, 64, 64)
-    }
+    func getAABB(adj_x, adj_y int) AABB
+        = AABB(this.x + adj_x, this.y + adj_y, 64, 64)
 }

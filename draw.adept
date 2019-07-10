@@ -83,7 +83,7 @@ func drawPlatform(platform POD Platform) {
         y += 64
     }
     
-    each Decoration in [platform.decorations.items, platform.decorations.length] {
+    each Decoration in platform.decorations {
         drawFromCamera(it.texture, (&it as *Region).getX() as float, (&it as *Region).getY() as float,
             (&it as *Region).getWidth() as float, (&it as *Region).getHeight() as float)
     }

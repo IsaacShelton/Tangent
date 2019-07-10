@@ -1,11 +1,6 @@
 
-struct GameImageEx (
-    texture CaptTexture,
-    x_offset, y_offset, width, height int
-){
-    func isValid bool {
-        return this.texture.isValid()
-    }
+struct GameImageEx (texture CaptTexture, x_offset, y_offset, width, height int) {
+    func isValid bool = this.texture.isValid()
 }
 
 func gameImageEx(texture CaptTexture, x_offset, y_offset, width, height int) GameImageEx {

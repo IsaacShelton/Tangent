@@ -138,11 +138,11 @@ func on_step {
     player.moving = false
     player.moving_horizontally = false
     
-    each Particle in [particles.items, particles.length] {
+    each Particle in particles {
         if it.update(), particles.remove(idx--)
     }
     
-    each Bullet in [bullets.items, bullets.length] {
+    each Bullet in bullets {
         it.x += it.vx
         
         // Destroy off-screen bullets
@@ -161,7 +161,7 @@ func on_step {
         hit bool = false
         
         // Test hit for spiders
-        each spider Spider in [spiders.items, spiders.length] {
+        each spider Spider in spiders {
             if aabb.intersecting(spider.getAABB()) {
                 spiders.remove(idx--)
                 hit = true
@@ -170,7 +170,7 @@ func on_step {
         }
         
         // Test hit for swordfish
-        unless hit, each fish Swordfish in [swordfishes.items, swordfishes.length] {
+        unless hit, each fish Swordfish in swordfishes {
             if aabb.intersecting(fish.getAABB()) {
                 swordfishes.remove(idx--)
                 hit = true
@@ -193,7 +193,7 @@ func on_step {
             hit bool = false
             
             // Test hit for spiders
-            each spider Spider in [spiders.items, spiders.length] {
+            each spider Spider in spiders {
                 if aabb.intersecting(spider.getAABB()) {
                     spiders.remove(idx--)
                     hit = true
@@ -202,7 +202,7 @@ func on_step {
             }
             
             // Test hit for swordfish
-            unless hit, each fish Swordfish in [swordfishes.items, swordfishes.length] {
+            unless hit, each fish Swordfish in swordfishes {
                 if aabb.intersecting(fish.getAABB()) {
                     swordfishes.remove(idx--)
                     hit = true
@@ -325,7 +325,7 @@ func on_step {
     }
     
     // Handle item pick up
-    each ItemSpawn in [item_spawns.items, item_spawns.length] {
+    each ItemSpawn in item_spawns {
         if it.collision.intersecting(player.getAABB()) {
             if item == it.item, break
             item = it.item
@@ -392,6 +392,8 @@ func on_key(key int, scancode int, action int, mods int) {
             // Shoot cannon
             if !cannon_ball.has {
                 cannon_ball.set(cannonBall(c.x + ((c.direction == 1) ? 128 : -40), c.y + 16, c.direction * 20))
+                
+                particles.add(particle(smoke, c.x + (c.direction == 1 ? 128 : -40), c.y, 64, 64))
             }
         }
         
@@ -408,9 +410,8 @@ func on_key(key int, scancode int, action int, mods int) {
     
     if key == controls.pause, pause()
     
-    k usize = 0; while k != 9 {
-        if key == GLFW_KEY_1 + k, gotoScene(1 + k)
-        k += 1
+    repeat 9 {
+        if key == GLFW_KEY_1 + idx, gotoScene(1 + idx)
     }
 }
 
@@ -455,10 +456,10 @@ func on_draw {
             (&entrance as *Region).getVisualHeight() as float)
     }
     
-    each Platform in [platforms.items, platforms.length], drawPlatform(it)
-    each Bridge in [bridges.items, bridges.length], drawBridge(it)
-    each Lake in [lakes.items, lakes.length], drawLakeUpFront(it)
-    each Bullet in [bullets.items, bullets.length], drawFromCamera(bullet, it.x as float, it.y as float, 8.0f, 8.0f)
+    each Platform in platforms, drawPlatform(it)
+    each Bridge in bridges, drawBridge(it)
+    each Lake in lakes, drawLakeUpFront(it)
+    each Bullet in bullets, drawFromCamera(bullet, it.x as float, it.y as float, 8.0f, 8.0f)
     
     if cannon.has,
         drawFromCameraEx(cannon_idle, cannon.value.x as float, cannon.value.y as float, 152.0f * cannon.value.direction as float, 72.0f)
@@ -474,17 +475,17 @@ func on_draw {
         drawFromCamera(enabler.now(), r.getVisualX() as float, r.getVisualY() as float, r.getVisualWidth() as float, r.getVisualHeight() as float)
     }
     
-    each ItemSpawn in [item_spawns.items, item_spawns.length] {
+    each ItemSpawn in item_spawns {
         if item == it.item, continue
         
         r *Region = &it as *Region
         drawFromCamera(getImageForItem(it.item), r.getVisualX() as float, r.getVisualY() as float, r.getVisualWidth() as float, r.getVisualHeight() as float)
     }
     
-    each Spider in [spiders.items, spiders.length],
+    each Spider in spiders,
         drawFromCameraEx(it.now(), it.x as float, it.y as float - 32.0f, it.vx as float * 64.0f, 64.0f)
     
-    each Swordfish in [swordfishes.items, swordfishes.length],
+    each Swordfish in swordfishes,
         drawFromCameraEx(it.now(), it.x as float, it.y as float, it.vx as float * 256.0f, 64.0f)
     
     // Draw player shadow for save-state powerup

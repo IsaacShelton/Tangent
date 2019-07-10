@@ -4,17 +4,17 @@ func playerIsInWater bool {
 }
 
 func isInWater(aabb AABB) bool {
-    each Lake in [lakes.items, lakes.length] {
+    each Lake in lakes {
         if aabb.intersecting(it.collision), return true
     }
     return false
 }
 
 func collidingGround(aabb AABB) *Region {
-    each Platform in [platforms.items, platforms.length] {
+    each Platform in platforms {
         if it.collision.intersecting(aabb), return &it as *Region
     }
-    each Bridge in [bridges.items, bridges.length] {
+    each Bridge in bridges {
         if it.collision.intersecting(aabb), return &it as *Region
     }
     return null
@@ -32,7 +32,7 @@ func updateSpiders {
     player_killed_spider bool = false
     playerAABB AABB = player.getAABB()
     
-    each Spider in [spiders.items, spiders.length] {
+    each Spider in spiders {
         // Update spider's animation
         it.update()
         
@@ -87,7 +87,7 @@ func updateSpiders {
 func updateSwordfish {
     playerAABB AABB = player.getAABB()
     
-    each Swordfish in [swordfishes.items, swordfishes.length] {
+    each Swordfish in swordfishes {
         it.update()
         
         it.x += it.speed * it.vx

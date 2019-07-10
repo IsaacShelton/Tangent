@@ -9,18 +9,15 @@ struct Swordfish (x, y, vx, speed, interval, ticker int, animation GameAnimation
         }
     }
     
-    func now CaptTexture {
-        return this.animation.now()
-    }
+    func now CaptTexture
+        = this.animation.now()
     
-    func getAABB AABB {
-        return AABB(this.x, this.y, 256, 64)
-    }
+    func getAABB AABB
+        = AABB(this.x, this.y, 256, 64)
 }
 
-func swordfish(source_animation GameAnimation, x, y, speed, interval int) Swordfish {
-    return swordfish(source_animation, x, y, speed, interval, false)
-}
+func swordfish(source_animation GameAnimation, x, y, speed, interval int) Swordfish
+    = swordfish(source_animation, x, y, speed, interval, false)
 
 func swordfish(source_animation GameAnimation, x, y, speed, interval int, reverse bool) Swordfish {
     fish Swordfish = undef

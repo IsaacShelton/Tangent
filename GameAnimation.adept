@@ -12,9 +12,8 @@ struct GameAnimation (frames *CaptTexture, length, currentFrame, ticker, interva
         this.ticker = 0
     }
     
-    func now CaptTexture {
-        return this.frames[this.currentFrame]
-    }
+    func now CaptTexture
+        = this.frames[this.currentFrame]
     
     func update {
         if ++this.ticker > this.interval {

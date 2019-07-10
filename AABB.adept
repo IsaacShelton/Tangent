@@ -1,9 +1,7 @@
 
 struct AABB (x, y, w, h int) {
-    func intersecting(other AABB) bool {
-        return this.x < other.x + other.w && this.x + this.w > other.x &&
-            this.y < other.y + other.h && this.y + this.h > other.y
-    }
+    func intersecting(other AABB) bool =
+        this.x < other.x + other.w && this.x + this.w > other.x && this.y < other.y + other.h && this.y + this.h > other.y
 }
 
 func AABB(x, y, w, h int) AABB {

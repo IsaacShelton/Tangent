@@ -1,12 +1,10 @@
 
 struct Cannon (x, y, vy, direction int) {
-    func getAABB AABB {
-        return AABB(this.x + 32, this.y, 152 - 64, 72)
-    }
+    func getAABB AABB
+        = AABB(this.x + 32, this.y, 152 - 64, 72)}
     
-    func getAABB(adj_x, adj_y int) AABB {
-        return AABB(this.x + adj_x + 32, this.y + adj_y, 152 - 64, 72)
-    }
+    func getAABB(adj_x, adj_y int) AABB
+        = AABB(this.x + adj_x + 32, this.y + adj_y, 152 - 64, 72)
 }
 
 func cannon(x, y, direction int) Cannon {

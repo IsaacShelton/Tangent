@@ -1,8 +1,6 @@
 
 struct Bullet (x, y, vx int) {
-    func getAABB AABB {
-        return AABB(this.x, this.y, 8, 8)
-    }
+    func getAABB AABB = AABB(this.x, this.y, 8, 8)
 }
 
 func bullet(x, y, vx int) Bullet {
