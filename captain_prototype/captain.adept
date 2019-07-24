@@ -35,6 +35,7 @@ _captain_shader_transformation_location GLint
 _captain_sprite_models *CaptModel
 _captain_sprite_models_length usize
 _captain_sprite_models_capacity usize
+_captain_hide_mouse_on_creation bool
 
 func captPrepare successful {
     _captain_window = null
@@ -60,6 +61,7 @@ func captPrepare successful {
     _captain_sprite_models = null
     _captain_sprite_models_length = 0
     _captain_sprite_models_capacity = 0
+    _captain_hide_mouse_on_creation = false
     return glfwInit() != 0
 }
 
@@ -157,6 +159,8 @@ func captStart(in title *ubyte, in width, height int, in fullscreen bool) {
         _captain_view_height = 800.0f
     }
     
+    if _captain_hide_mouse_on_creation, captHideMouse()
+
     if _captain_setup as ptr, _captain_setup()
     
     glfwSetMouseButtonCallback(_captain_window, func &_captMouseCallback)
@@ -588,4 +592,14 @@ func captRandom double {
 
 func captKeyHeld(key int) bool {
     return glfwGetKey(_captain_window, key) == GLFW_PRESS
+}
+
+func captHideMouse {
+    if _captain_window, glfwSetInputMode(_captain_window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN)
+    else _captain_hide_mouse_on_creation = true
+}
+
+func captShowMouse {
+    if _captain_window, glfwSetInputMode(_captain_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL)
+    else _captain_hide_mouse_on_creation = false
 }

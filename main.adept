@@ -41,6 +41,7 @@ func main {
     captAddTypical(64.0f, 32.0f)
     captAddTypical(128.0f, 128.0f)
     
+    captHideMouse()
     captCustomView(1920.0f, 1280.0f)
     #if fullscreen
         captStart('Tangent', true)
@@ -366,7 +367,8 @@ func on_key(key int, scancode int, action int, mods int) {
     if controls == wasd {
         if key == GLFW_KEY_UP || key == GLFW_KEY_DOWN || key == GLFW_KEY_LEFT || key == GLFW_KEY_RIGHT,
             controls = arrows
-        else if key == GLFW_KEY_W || key == GLFW_KEY_S || key == GLFW_KEY_A || key == GLFW_KEY_D,
+    } else if controls == arrows {
+        if key == GLFW_KEY_W || key == GLFW_KEY_S || key == GLFW_KEY_A || key == GLFW_KEY_D,
             controls = wasd
     }
     
