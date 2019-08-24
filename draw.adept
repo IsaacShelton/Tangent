@@ -12,7 +12,7 @@ func drawFromCameraEx(texture CaptTexture, x, y, w, h float) {
 func drawLakeBehind(lake Lake) {
     y int = (&lake as *Region).getY(); while y < (&lake as *Region).getMaxY() {
         x int = (&lake as *Region).getX(); while x < (&lake as *Region).getMaxX() {
-            drawFromCamera((y == (&lake as *Region).getY()) ? wave.now() : water, x as float, y as float, 64.0f, 64.0f)
+            drawFromCamera((y == (&lake as *Region).getY()) ? theme.wave.now() : theme.water, x as float, y as float, 64.0f, 64.0f)
             x += 64
         }
         y += 64
@@ -46,7 +46,7 @@ func drawLakeUpFront(lake Lake) {
                 x += 64; continue
             
             captDrawOpacity(opacity)
-            drawFromCamera((y == (&lake as *Region).getY()) ? wave.now() : water, x as float, y as float, 64.0f, 64.0f)
+            drawFromCamera((y == (&lake as *Region).getY()) ? theme.wave.now() : theme.water, x as float, y as float, 64.0f, 64.0f)
             x += 64
         }
         y += 64
@@ -59,23 +59,23 @@ func drawPlatform(platform POD Platform) {
         x int = (&platform as *Region).getX(); while x < (&platform as *Region).getMaxX() {
             
             if x == (&platform as *Region).getX() && y == (&platform as *Region).getY() {
-                drawFromCamera(platform_north_west, x as float, y as float, 64.0f, 64.0f)
+                drawFromCamera(theme.platform_nw, x as float, y as float, 64.0f, 64.0f)
             } else if x == (&platform as *Region).getX() && y + 64 >= (&platform as *Region).getMaxY() {
-                drawFromCamera(platform_south_west, x as float, y as float, 64.0f, 64.0f)
+                drawFromCamera(theme.platform_sw, x as float, y as float, 64.0f, 64.0f)
             } else if x + 64 >= (&platform as *Region).getMaxX() && y == (&platform as *Region).getY() {
-                drawFromCamera(platform_north_east, x as float, y as float, 64.0f, 64.0f)
+                drawFromCamera(theme.platform_ne, x as float, y as float, 64.0f, 64.0f)
             } else if x + 64 >= (&platform as *Region).getMaxX() && y + 64 >= (&platform as *Region).getMaxY() {
-                drawFromCamera(platform_south_east, x as float, y as float, 64.0f, 64.0f)
+                drawFromCamera(theme.platform_se, x as float, y as float, 64.0f, 64.0f)
             } else if x == (&platform as *Region).getX() {
-                drawFromCamera(platform_west, x as float, y as float, 64.0f, 64.0f)
+                drawFromCamera(theme.platform_w, x as float, y as float, 64.0f, 64.0f)
             } else if y == (&platform as *Region).getY() {
-                drawFromCamera(platform_north, x as float, y as float, 64.0f, 64.0f)
+                drawFromCamera(theme.platform_n, x as float, y as float, 64.0f, 64.0f)
             } else if x + 64 >= (&platform as *Region).getMaxX() {
-                drawFromCamera(platform_east, x as float, y as float, 64.0f, 64.0f)
+                drawFromCamera(theme.platform_e, x as float, y as float, 64.0f, 64.0f)
             } else if y + 64 >= (&platform as *Region).getMaxY() {
-                drawFromCamera(platform_south, x as float, y as float, 64.0f, 64.0f)
+                drawFromCamera(theme.platform_s, x as float, y as float, 64.0f, 64.0f)
             } else {
-                drawFromCamera(platform_center, x as float, y as float, 64.0f, 64.0f)
+                drawFromCamera(theme.platform_c, x as float, y as float, 64.0f, 64.0f)
             }
             
             x += 64
@@ -120,6 +120,84 @@ func drawDeath {
         death_image.width as float, death_image.height as float)
 }
 
+func drawCrawler(crawler POD Crawler) {
+    drawFromCameraEx(crawler.now(), crawler.x as float, crawler.y as float - 32.0f, crawler.vx as float * 64.0f, 64.0f)
+}
+
+func drawSign(s POD Sign) {
+    drawFromCamera(sign, s.visual.x as float, s.visual.y as float, 64.0f, 64.0f)
+    
+    if s.press_h_opacity != 0.0f {
+        text Text = text("Press H", 14.0)
+        captDrawOpacity(s.press_h_opacity)
+        text.drawFromCamera(s.visual.x as float - 3.0f, s.visual.y as float - 16.0f)
+        captDrawOpacity(1.0f)
+        text.destroy()
+    }
+}
+
+func drawInventory {
+    // Draw main section of inventory
+    inventory_x float = getInventoryX()
+    inventory_y float = getInventoryY()
+    captDrawTexture(testinv, inventory_x, inventory_y, 224.0f * 4.0f, 112.0f * 4.0f)
+    
+    /*
+        X offset for inventory columns
+         (4.0f + 96.0f * 4.0f * colStartingAtZero)
+        Y offsets for inventory rows
+         (36.9811320754717f * 4.0f, 62.339622641509436f * 4.0f, 87.69811320754717f * 4.0f)
+    */
+    
+    // Draw selection
+    selection_relx float = 4.0f + 96.0f * inventory_selection_x as float
+    selection_rely float = (112.0f / 106.0f * (35.0f + 24.0f * inventory_selection_y as float)) * 4.0f
+    captDrawTexture(invselected, inventory_x + selection_relx, inventory_y + selection_rely, 22.0f * 4.0f, 112.0f / 106.0f * 22.0f * 4.0f)
+    
+    // Draw items
+    repeat 18 {
+        if (crafting ? craftable[idx] : inventory[idx]) == Item::NONE, continue
+        
+        relx float = getInventoryItemRelX(idx)
+        rely float = getInventoryItemRelY(idx)
+        captDrawTexture(getImageForItem(crafting ? craftable[idx] : inventory[idx]), inventory_x + relx, inventory_y + rely, 64.0f, 64.0f)
+    }
+    
+    repeat 6 {
+        value int = resources[idx]
+        if value > 999, value = 999
+        
+        relx float = getInventoryItemRelX(idx)
+        rely float = 112.0f / 106.0f * 16.0f
+        captDrawTexture(getImageForResource(idx + 1), inventory_x + relx, inventory_y + rely, 64.0f, 64.0f)
+        
+        ones int = value % 10
+        tens int = value / 10 % 10
+        hundreds int = value / 100 % 10
+        
+        if tens == 0 && hundreds == 0 {
+            // Single digit
+            captDrawTexture(numbers[ones], inventory_x + 36.0f + idx as float * 96.0f + 2.0f, inventory_y + 108.0f, 16.0f, 24.0f)
+        } else if hundreds == 0 {
+            // Double digit
+            captDrawTexture(numbers[tens], inventory_x + 36.0f + idx as float * 96.0f - 6.0f, inventory_y + 108.0f, 16.0f, 24.0f)
+            captDrawTexture(numbers[ones], inventory_x + 36.0f + idx as float * 96.0f + 10.0f, inventory_y + 108.0f, 16.0f, 24.0f)
+        } else {
+            // Triple digit
+            captDrawTexture(numbers[hundreds], inventory_x + 36.0f + idx as float * 96.0f - 14.0f, inventory_y + 108.0f, 16.0f, 24.0f)
+            captDrawTexture(numbers[tens], inventory_x + 36.0f + idx as float * 96.0f + 2.0f, inventory_y + 108.0f, 16.0f, 24.0f)
+            captDrawTexture(numbers[ones], inventory_x + 36.0f + idx as float * 96.0f + 18.0f, inventory_y + 108.0f, 16.0f, 24.0f)
+        }
+    }
+    
+    captDrawTexture(crafting ? crafting_mode : inventory_mode, inventory_x + 144.0f * 2.0f - 96.0f * 2.0f, inventory_y - 128.0f, 96.0f * 4.0f, 32.0f * 4.0f)
+    
+    selected usize = getInventorySelectionIndex()
+    test Text = text(getNameForItem(crafting ? craftable[selected] : inventory[selected]), 22.0)
+    test.draw(inventory_x + 224.0f * 3.0f - 16.0f, inventory_y + 32.0f)
+    test.destroy()
+}
+
 func getImageForPlayer(player POD Player) GameImageEx {
     if item == Item::GUN {
         if player.swimming,
@@ -151,9 +229,22 @@ func getImageForPlayer(player POD Player) GameImageEx {
 }
 
 func getImageForItem(item Item) CaptTexture {
-    if item == Item::STAR,   return star
-    if item == Item::WING,   return wing
-    if item == Item::GUN,    return gun
-    if item == Item::CANNON, return cannon_power
+    if item == Item::STAR,       return star
+    if item == Item::WING,       return wing
+    if item == Item::GUN,        return gun
+    if item == Item::CANNON,     return cannon_power
+    if item == Item::DOUBLEJUMP, return doublejump
+    return stump
+}
+
+func getImageForResource(resource Resource) CaptTexture = getImageForResource(resource as int)
+
+func getImageForResource(resource_id int) CaptTexture {
+    if resource_id == Resource::STRING as int,  return string
+    if resource_id == Resource::SLIME as int,   return slime
+    if resource_id == Resource::WOOD as int,    return wood
+    if resource_id == Resource::FEATHER as int, return feather
+    if resource_id == Resource::METAL as int,   return metal
+    if resource_id == Resource::CRYSTAL as int, return crystal
     return stump
 }

@@ -1,2 +1,46 @@
 
-enum Item (NONE, STAR, WING, GUN, CANNON)
+enum Item (NONE, STAR, WING, GUN, CANNON, DOUBLEJUMP)
+
+func getNameForItem(item Item) String {
+    if item == Item::STAR,       return "Blue Star"
+    if item == Item::WING,       return "Wing"
+    if item == Item::GUN,        return "Gun"
+    if item == Item::CANNON,     return "Cannon"
+    if item == Item::DOUBLEJUMP, return "Double Jump"
+    return ""
+}
+
+func pickupItem(itemSpawn POD ItemSpawn) {
+    pickupItem(itemSpawn.item,
+        (&itemSpawn as *Region).getX() as float - camera_x,
+        (&itemSpawn as *Region).getY() as float - camera_y)
+}
+
+func pickupItem(newItem Item, screenX, screenY float) {
+    item = newItem
+    item_screen_x = screenX
+    item_screen_y = screenY
+    cannon.rid()
+}
+
+enum Resource (NONE, STRING, SLIME, WOOD, FEATHER, METAL, CRYSTAL)
+struct CollectedResource (resource Resource, x, y float)
+
+func addCollectedResource(resource Resource, screenX, screenY float) {
+    collected POD CollectedResource = undef
+    collected.resource = resource
+    collected.x = screenX
+    collected.y = screenY
+    collected_resources.add(collected)
+}
+
+struct Price (string, slime, wood, feathers, metal, crystals int) {
+    func set(string, slime, wood, feathers, metal, crystals int) {
+        this.string = string
+        this.slime = slime
+        this.wood = wood
+        this.feathers = feathers
+        this.metal = metal
+        this.crystals = crystals
+    }
+}

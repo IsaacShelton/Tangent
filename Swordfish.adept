@@ -1,5 +1,7 @@
 
-struct Swordfish (x, y, vx, speed, interval, ticker int, animation GameAnimation) {
+SWORDFISH == 1
+
+struct Swordfish (kind, x, y, vx, speed, interval, ticker int, animation GameAnimation) {
     func update {
         this.animation.update()
         
@@ -16,17 +18,24 @@ struct Swordfish (x, y, vx, speed, interval, ticker int, animation GameAnimation
         = AABB(this.x, this.y, 256, 64)
 }
 
-func swordfish(source_animation GameAnimation, x, y, speed, interval int) Swordfish
-    = swordfish(source_animation, x, y, speed, interval, false)
+func swordfish(kind, x, y, speed, interval int) Swordfish
+    = swordfish(kind, x, y, speed, interval, false)
 
-func swordfish(source_animation GameAnimation, x, y, speed, interval int, reverse bool) Swordfish {
+func swordfish(kind, x, y, speed, interval int, reverse bool) Swordfish {
     fish Swordfish = undef
+    fish.kind = kind
     fish.x = x
     fish.y = y
     fish.vx = reverse ? -1 : 1
     fish.speed = speed
     fish.interval = interval
     fish.ticker = 0
-    fish.animation = source_animation.newInstance()
+    
+    if kind == SWORDFISH {
+        fish.animation = swordfish_animation.newInstance()
+    } else {
+        fish.animation = swordfish_animation.newInstance()
+    }
+    
     return fish
 }

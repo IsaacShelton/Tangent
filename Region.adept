@@ -12,6 +12,33 @@ struct Region (collision AABB, visual AABB) {
     func getHeight int = this.collision.h
     func getVisualWidth int = this.visual.w
     func getVisualHeight int = this.visual.h
+    
+    func adjustPosition(xAdjustment, yAdjustment int) {
+        this.collision.x += xAdjustment
+        this.collision.y += yAdjustment
+        this.visual.x += xAdjustment
+        this.visual.y += yAdjustment
+    }
+    
+    func adjustWidth(adjustment int) {
+        this.collision.w += adjustment
+        this.visual.w += adjustment
+        
+        if this.collision.w <= 0 || this.visual.w <= 0 {
+            this.collision.w -= adjustment
+            this.visual.w -= adjustment
+        }
+    }
+    
+    func adjustHeight(adjustment int) {
+        this.collision.h += adjustment
+        this.visual.h += adjustment
+        
+        if this.collision.h <= 0 || this.visual.h <= 0 {
+            this.collision.h -= adjustment
+            this.visual.h -= adjustment
+        }
+    }
 }
 
 func region(x, y, w, h int) Region {
@@ -28,13 +55,47 @@ func region(x, y, w, h, x2, y2, w2, h2 int) Region {
     return region
 }
 
-struct Platform (struct Region, decorations <Decoration> List)
+struct Platform (struct Region, decorations <Decoration> List, decor_id int) {
+    func adjustWidth(adjustment int) {
+        r *Region = this as *Region
+        r.adjustWidth(adjustment)
+    }
+    
+    func adjustHeight(adjustment int) {
+        r *Region = this as *Region
+        r.adjustHeight(adjustment)
+    }
+    
+    func adjustPosition(xAdjustment, yAdjustment int) {
+        this.collision.x += xAdjustment
+        this.collision.y += yAdjustment
+        this.visual.x += xAdjustment
+        this.visual.y += yAdjustment
+        
+        if this.collision.w <= 0 || this.visual.w <= 0 {
+            this.collision.w -= xAdjustment
+            this.visual.w -= xAdjustment
+        }
+        
+        if this.collision.h <= 0 || this.visual.h <= 0 {
+            this.collision.h -= yAdjustment
+            this.visual.h -= yAdjustment
+        }
+        
+        each Decoration in this.decorations {
+            r *Region = &it as *Region
+            r.adjustPosition(xAdjustment, yAdjustment)
+        }
+    }
+}
+
 struct Lake (struct Region)
 struct Bridge (struct Region)
 struct Portal (struct Region)
 struct Decoration (struct Region, texture CaptTexture)
 struct ItemSpawn (struct Region, item Item)
-struct PortalEnabler (struct Region)
+struct PortalEnabler (struct Region, collected bool)
+struct Sign (struct Region, text String, press_h_opacity float)
 
 func platform(x, y, w, h int) Platform {
     platform POD Platform
@@ -84,7 +145,17 @@ func portalEnabler(x, y, w, h int) PortalEnabler {
     enabler PortalEnabler = undef
     enabler.collision = AABB(x, y, w, h)
     enabler.visual = AABB(x, y, w, h)
+    enabler.collected = false
     return enabler
+}
+
+func sign(x, y int, text POD String) Sign {
+    sign Sign = undef
+    sign.collision = AABB(x, y, 64, 64)
+    sign.visual = AABB(x, y, 64, 64)
+    sign.text = text
+    sign.press_h_opacity = 0.0f
+    return sign
 }
 
 struct Particle (struct Region, animation GameAnimation){
@@ -106,3 +177,194 @@ func particle(sourceAnimation GameAnimation, x, y, w, h int) Particle {
     particle.animation = sourceAnimation.newInstance()
     return particle
 }
+
+DECOR_NONE == 0
+DECOR_BUSH == 1
+DECOR_FLOWERA == 2
+DECOR_FLOWERB == 3
+DECOR_ROCKA == 4
+DECOR_ROCKB == 5
+DECOR_MUSHROOMA == 6
+DECOR_MUSHROOMB == 7
+DECOR_STUMP == 8
+DECOR_GRASSA == 9
+DECOR_GRASSB == 10
+DECOR_GRASSC == 11
+DECOR_FENCE == 12
+DECOR_MAX_ID == DECOR_FENCE
+
+func createPlatform(x, y, w, h, decor int) {
+    p POD Platform = platform(x, y, w, h)
+    p.decor_id = decor
+    
+    if decor == DECOR_NONE {
+        platforms.add(p)
+        return
+    }
+    
+    if decor == DECOR_BUSH {
+        p.decorations.add(decoration(theme.bushl, x + 64, y - 64, 64, 64))
+        p.decorations.add(decoration(theme.bushr, x + 128, y - 64, 64, 64))
+        platforms.add(p)
+        return
+    }
+    
+    if decor == DECOR_FLOWERA {
+        p.decorations.add(decoration(flower_a, x + 64, y - 64, 64, 64))
+        platforms.add(p)
+        return
+    }
+    
+    if decor == DECOR_FLOWERB {
+        p.decorations.add(decoration(flower_a, x + 64, y - 64, 64, 64))
+        platforms.add(p)
+        return
+    }
+    
+    if decor == DECOR_ROCKA {
+        p.decorations.add(decoration(rock_a, x + 64, y - 64, 64, 64))
+        platforms.add(p)
+        return
+    }
+    
+    if decor == DECOR_ROCKB {
+        p.decorations.add(decoration(rock_b, x + 128, y - 64, 64, 64))
+        platforms.add(p)
+        return
+    }
+    
+    if decor == DECOR_MUSHROOMA {
+        p.decorations.add(decoration(mushroom_a, x + 64, y - 64, 64, 64))
+        platforms.add(p)
+        return
+    }
+    
+    if decor == DECOR_MUSHROOMB {
+        p.decorations.add(decoration(mushroom_b, x + w - 128, y - 64, 64, 64))
+        platforms.add(p)
+        return
+    }
+    
+    if decor == DECOR_STUMP {
+        p.decorations.add(decoration(stump, x + 64, y - 64, 64, 64))
+        platforms.add(p)
+        return
+    }
+    
+    if decor == DECOR_GRASSA {
+        p.decorations.add(decoration(grass_a, x + 64, y - 64, 64, 64))
+        platforms.add(p)
+        return
+    }
+    
+    if decor == DECOR_GRASSB {
+        p.decorations.add(decoration(grass_b, x + 64, y - 64, 64, 64))
+        platforms.add(p)
+        return
+    }
+    
+    if decor == DECOR_GRASSC {
+        p.decorations.add(decoration(grass_c, x + 64, y - 64, 64, 64))
+        platforms.add(p)
+        return
+    }
+    
+    if decor == DECOR_FENCE {
+        p.decorations.add(decoration(fence_a, x + w - 128, y - 64, 64, 64))
+        p.decorations.add(decoration(fence_b, x + w - 192, y - 64, 64, 64))
+        platforms.add(p)
+        return
+    }
+    
+    printf('ERROR: createPlatform() invalid decor type!\n')
+}
+
+func inRange(this *Sign) bool {
+    return abs(this.collision.x - player.x) < 80 && abs(this.collision.y - player.y) < 80
+}
+
+func read(this *Sign) {
+    if signboard.has, return
+    signboard.value.create(this.visual.x as float - camera_x, this.visual.y as float - camera_y, 64.0f, 64.0f, this.text)
+    signboard.has = true
+}
+
+struct SignBoard (sign_x, sign_y, x, y, w, h float, message String, closing bool) {
+    func create(x, y, w, h float, message String) {
+        this.sign_x = x
+        this.sign_y = y
+        this.x = x
+        this.y = y
+        this.w = w
+        this.h = h
+        this.message = message
+        this.closing = false
+    }
+    
+    func update {
+        if this.closing {
+            this.x = fabs(this.x - this.sign_x) < 2.0f ? this.sign_x : (this.x + this.sign_x) / 2.0f
+            this.y = fabs(this.y - this.sign_y) < 2.0f ? this.sign_y : (this.y + this.sign_y) / 2.0f
+            this.w = fabs(this.w - 64.0f) < 2.0f ? 64.0f : (this.w + 64.0f) / 2.0f
+            this.h = fabs(this.h - 64.0f) < 2.0f ? 64.0f : (this.h + 64.0f) / 2.0f
+        } else {
+            target_size float = captViewHeight() / 2.0f
+            target_x float = captViewWidth() / 2.0f - target_size / 2.0f
+            target_y float = captViewHeight() / 2.0f - target_size / 2.0f
+            this.x = fabs(this.x - target_x) < 2.0f ? target_x : (this.x + target_x) / 2.0f
+            this.y = fabs(this.y - target_y) < 2.0f ? target_y : (this.y + target_y) / 2.0f
+            this.w = fabs(this.w - target_size) < 2.0f ? target_size : (this.w + target_size) / 2.0f
+            this.h = fabs(this.h - target_size) < 2.0f ? target_size : (this.h + target_size) / 2.0f
+        }
+    }
+    
+    func close {
+        this.closing = true
+    }
+    
+    func closed bool {
+        return this.closing && fabs(this.x - this.sign_x) < 2.0f && fabs(this.y - this.sign_y) < 2.0f &&
+            fabs(this.w - 64.0f) < 2.0f && fabs(this.h - 64.0f) < 2.0f
+    }
+    
+    func draw {
+        smallest_size float = 64.0f
+        largest_size float = 96.0f
+        opacity float = (this.w - smallest_size) / (largest_size - smallest_size)
+        if opacity > 1.0f, opacity = 1.0f
+        
+        captDrawOpacity(opacity)
+        captDrawTexture(signboard_texture, this.x as float, this.y as float, this.w as float, this.h as float)
+        text Text = text(this.message, this.h as float / 36.0f)
+        text.draw(this.x as float + this.w as float / 6.0f, this.y as float + this.h as float / 4.0f)
+        text.destroy()
+        captDrawOpacity(1.0f)
+    }
+}
+
+/*
+struct SignBoard (x, y, w, h int, message String) {
+    func create(x, y, w, h int, message String) {
+        this.x = x
+        this.y = y
+        this.w = w
+        this.h = h
+        this.message = message
+    }
+    
+    func update {
+        if this.w > 640, return
+        this.w += 16
+        this.h += 16
+        this.x -= 8
+        this.y -= 8
+    }
+    
+    func draw {
+        captDrawTexture(signboard_texture, this.x as float, this.y as float, this.w as float, this.h as float)
+        text Text = text(this.message, this.h as float / 32.0f)
+        text.draw(this.x as float + this.w as float / 6.0f, this.y as float + this.h as float / 4.0f)
+        text.destroy()
+    }
+}
+*/

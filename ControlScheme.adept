@@ -1,7 +1,7 @@
 
-struct ControlScheme (up, down, left, right, a, b, pause int)
+struct ControlScheme (up, down, left, right, a, b, pause, alt_up, interact int)
 
-func controlScheme(up, down, left, right, a, b, pause int) ControlScheme {
+func controlScheme(up, down, left, right, a, b, pause, alt_up, interact int) ControlScheme {
     scheme ControlScheme = undef
     scheme.up = up
     scheme.down = down
@@ -10,6 +10,8 @@ func controlScheme(up, down, left, right, a, b, pause int) ControlScheme {
     scheme.a = a
     scheme.b = b
     scheme.pause = pause
+    scheme.alt_up = alt_up
+    scheme.interact = interact
     return scheme
 }
 
@@ -21,5 +23,7 @@ func __equals__(a, b POD ControlScheme) bool {
     if a.a != b.a,         return false
     if a.b != b.b,         return false
     if a.pause != b.pause, return false
+    if a.alt_up != b.alt_up, return false
+    if a.interact != b.interact, return false
     return true
 }

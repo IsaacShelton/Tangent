@@ -28,29 +28,29 @@ func playerOnPlatform *Region {
     return collidingGround(player.getAABB(0, 1))
 }
 
-func updateSpiders {
-    player_killed_spider bool = false
+func updateCrawlers {
+    player_killed_crawler bool = false
     playerAABB AABB = player.getAABB()
     
-    each Spider in spiders {
-        // Update spider's animation
+    each Crawler in crawlers {
+        // Update crawler's animation
         it.update()
         
         // Handle landing on ground
         ground *Region = collidingGround(it.getAABB(0, 1))
         it.vy = (ground != null) ? 0 : (it.vy < 24) ? it.vy + 1 : it.vy
         
-        // Advance spider
+        // Advance crawler
         it.x += it.speed * it.vx
         collision *Region = collidingGround(it.getAABB())
         
-        // Turn spider around if ran into something
+        // Turn crawler around if ran into something
         if collision {
             it.x = (it.vx > 0) ? collision.getX() - 64 : collision.getMaxX()
             it.vx *= -1
         }
         
-        // Apply gravity to spider
+        // Apply gravity to crawler
         it.y += it.vy
         collision = collidingGround(it.getAABB())
         
@@ -60,15 +60,16 @@ func updateSpiders {
         
         // Kill spiders in water
         if isInWater(it.getAABB()) {
-            spiders.remove(idx--)
+            crawlers.remove(idx--)
             continue
         }
         
         // Handle player-spider collision
         if playerAABB.intersecting(it.getAABB()){
             if player.vy > 0 && player.y + 32 < it.y + 16 {
-                spiders.remove(idx--)
-                player_killed_spider = true
+                it.drop()
+                crawlers.remove(idx--)
+                player_killed_crawler = true
                 continue
             } else {
                 killPlayer()
@@ -81,7 +82,7 @@ func updateSpiders {
         }
     }
     
-    if player_killed_spider, player.vy = -10
+    if player_killed_crawler, player.vy = -10
 }
 
 func updateSwordfish {

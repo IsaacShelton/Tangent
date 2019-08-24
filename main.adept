@@ -1,6 +1,7 @@
 
 #set show_fps false
 #set fullscreen true
+#set cheats true
 
 pragma compiler_supports '2.2'
 pragma no_type_info
@@ -15,14 +16,21 @@ import 'GameImageEx.adept'
 import 'Item.adept'
 import 'Player.adept'
 import 'Region.adept'
-import 'Spider.adept'
+import 'Crawler.adept'
 import 'Swordfish.adept'
 import 'Optional.adept'
+import 'Theme.adept'
+import 'SlimeBoss.adept'
+import 'Text.adept'
 import 'globals.adept'
 import 'addons.adept'
 import 'scenes.adept'
 import 'logic.adept'
 import 'draw.adept'
+import 'where.adept'
+import 'themes.adept'
+import 'camera.adept'
+import 'inventory.adept'
 
 import '2.2/basics.adept'
 import '2.2/List.adept'
@@ -51,9 +59,11 @@ func main {
 }
 
 func on_setup {
+    captRandomize()
     loadAssets()
+    loadThemes()
     setupState()
-    gotoScene1()
+    gotoTitleScreen()
     
     #if show_fps
         previous_time = glfwGetTime()
@@ -88,6 +98,25 @@ func on_step {
     
     // Wait to resume if paused
     if is_paused, return
+
+    // Ease background inventory shadow
+    if inventory_open {
+        inventory_bg_shade = fabs(inventory_bg_shade - 0.5f) < 0.01f ? 0.5f : (inventory_bg_shade * 4.0f + 0.5f) / 5.0f
+    } else {
+        inventory_bg_shade = fabs(inventory_bg_shade) < 0.01f ? 0.0f : inventory_bg_shade * 4.0f / 5.0f
+    }
+    
+    // Animate item pick up
+    if item != Item::NONE {
+        target_screen_x float = 1792.0f + 14.0f
+        target_screen_y float = 32.0f + 14.0f
+        
+        item_screen_x = (item_screen_x < target_screen_x - 4.0f) ? item_screen_x + (target_screen_x - item_screen_x) / 4.0f : target_screen_x
+        item_screen_y = (item_screen_y > target_screen_y + 4.0f) ? item_screen_y + (target_screen_y - item_screen_y) / 4.0f : target_screen_y
+    }
+    
+    // Don't run main game logic if inventory is open
+    if inventory_open, return
     
     if player.swimming {
         gun_swim.update()
@@ -129,7 +158,7 @@ func on_step {
         }
     }
     
-    wave.update()
+    theme.wave.update()
     inwards_portal.update()
     disabled_portal.update()
     outwards_portal.update()
@@ -161,22 +190,29 @@ func on_step {
         
         hit bool = false
         
-        // Test hit for spiders
-        each spider Spider in spiders {
-            if aabb.intersecting(spider.getAABB()) {
-                spiders.remove(idx--)
+        // Test hit for crawlers
+        each Crawler in crawlers {
+            if aabb.intersecting(it.getAABB()) {
+                it.drop()
+                crawlers.remove(idx--)
                 hit = true
                 break
             }
         }
         
         // Test hit for swordfish
-        unless hit, each fish Swordfish in swordfishes {
-            if aabb.intersecting(fish.getAABB()) {
+        unless hit, each Swordfish in swordfishes {
+            if aabb.intersecting(it.getAABB()) {
                 swordfishes.remove(idx--)
                 hit = true
                 break
             }
+        }
+        
+        // Test hit for slime boss
+        unless hit || !slime_boss.has, if aabb.intersecting(slime_boss.value.getAABB()) {
+            slime_boss.value.hurt(1)
+            hit = true
         }
         
         if hit, bullets.remove(idx--)
@@ -193,22 +229,29 @@ func on_step {
         } else {
             hit bool = false
             
-            // Test hit for spiders
-            each spider Spider in spiders {
-                if aabb.intersecting(spider.getAABB()) {
-                    spiders.remove(idx--)
+            // Test hit for crawlers
+            each Crawler in crawlers {
+                if aabb.intersecting(it.getAABB()) {
+                    it.drop()
+                    crawlers.remove(idx--)
                     hit = true
                     break
                 }
             }
             
             // Test hit for swordfish
-            unless hit, each fish Swordfish in swordfishes {
-                if aabb.intersecting(fish.getAABB()) {
+            unless hit, each Swordfish in swordfishes {
+                if aabb.intersecting(it.getAABB()) {
                     swordfishes.remove(idx--)
                     hit = true
                     break
                 }
+            }
+            
+            // Test hit for slime boss
+            unless hit || !slime_boss.has, if aabb.intersecting(slime_boss.value.getAABB()) {
+                slime_boss.value.hurt(2)
+                hit = true
             }
             
             if !hit && aabb.intersecting(player.getAABB()){
@@ -247,7 +290,7 @@ func on_step {
     if player.swimming {
         // Swimming Mode
         
-        if captKeyHeld(controls.up) {
+        if captKeyHeld(controls.up) || captKeyHeld(controls.alt_up) {
             // Swim upwards
             player.y -= (item == Item::WING && captKeyHeld(controls.a)) ? 6 : 4
             player.moving = true
@@ -261,6 +304,10 @@ func on_step {
             // Swim downwards
             player.y += (item == Item::WING && captKeyHeld(controls.a)) ? 6 : 4
             player.moving = true
+            
+            // Prevent swimming downwards into something
+            collision *Region = playerCollidingPlatform()
+            if collision, player.y = collision.getY() - 64
         }
         
         // Sink player in water
@@ -270,6 +317,7 @@ func on_step {
         player.vy += (player.vy < 24) ? 1 : 0
     } else {
         // Grounded Mode
+        double_jumped = false
         
         if item == Item::WING && captKeyHeld(controls.b) {
             // Wing Big Jump Ability
@@ -286,8 +334,8 @@ func on_step {
     }
     
     // Parachute if falling in air and UP is held
-    player.parachuting = currently_on_ground == null && player.vy > 0 && captKeyHeld(controls.up);
-    if player.parachuting && player.vy > 4, player.vy = 4;
+    player.parachuting = currently_on_ground == null && player.vy > 0 && captKeyHeld(controls.up)
+    if player.parachuting && player.vy > 4, player.vy = 4
     
     // Apply horizontal force on player
     player.x += player.vx
@@ -300,11 +348,11 @@ func on_step {
     if collision, player.y = (player.vy > 0) ? collision.getY() - 64 : collision.getMaxY()
     
     // Apply friction
-    player.vx += (player.vx < 0) ? 1 : (player.vx > 0) ? -1 : 0;
+    player.vx += (player.vx < 0) ? 1 : (player.vx > 0) ? -1 : 0
     
     // Clamp player to level
-    player.x = (player.x < 0) ? 0 : (player.x as float + 64.0f > scene_width) ? scene_width as int - 64 : player.x;
-    player.y = (player.y < 0) ? 0 : (player.y as float + 64.0f > 1280.0f) ? 1216 : player.y;
+    player.x = (player.x < 0) ? 0 : (player.x as float + 64.0f > scene_width) ? scene_width as int - 64 : player.x
+    player.y = (player.y < 0) ? 0 : (player.y as float + 64.0f > 1280.0f) ? 1216 : player.y
     
     // Animate teleportation
     if teleporting {
@@ -316,43 +364,84 @@ func on_step {
         }
     }
     
-    // Animate item pick up
-    if item != Item::NONE {
-        target_screen_x float = 1792.0f + 14.0f
-        target_screen_y float = 32.0f + 14.0f
-        
-        item_screen_x = (item_screen_x < target_screen_x - 4.0f) ? item_screen_x + (target_screen_x - item_screen_x) / 4.0f : target_screen_x
-        item_screen_y = (item_screen_y > target_screen_y + 4.0f) ? item_screen_y + (target_screen_y - item_screen_y) / 4.0f : target_screen_y
-    }
-    
     // Handle item pick up
     each ItemSpawn in item_spawns {
         if it.collision.intersecting(player.getAABB()) {
             if item == it.item, break
-            item = it.item
-            item_screen_x = (&it as *Region).getX() as float - camera_x
-            item_screen_y = (&it as *Region).getY() as float - camera_y
-            cannon.rid()
+            pickupItem(it)
             break
         }
     }
     
-    // Enable portal if obtained portal enabler
+    // Collect portal enabler if applicable
     if portal_enabler.has && portal_enabler.value.collision.intersecting(player.getAABB()) {
-        exit_disabled = false
-        portal_enabler.rid()
+        portal_enabler.value.collected = true
+    }
+    
+    // Move portal enabler towards portal if collected
+    if portal_enabler.has && portal_enabler.value.collected && exit.has {
+        exit_x int = exit.value.visual.x + 32
+        exit_y int = exit.value.visual.y + 48
+        new_x int = (portal_enabler.value.collision.x + exit_x) / 2
+        new_y int = (portal_enabler.value.collision.y + exit_y) / 2
+        
+        portal_enabler.value.collision.x = new_x
+        portal_enabler.value.collision.y = new_y
+        portal_enabler.value.visual.x = new_x
+        portal_enabler.value.visual.y = new_y
+        
+        x_diff double = abs(new_x - exit_x) as double
+        y_diff double = abs(new_y - exit_y) as double
+        dist double = sqrt(x_diff * x_diff + y_diff * y_diff)
+        
+        if dist < 2.0 {
+            exit_disabled = false
+            portal_enabler.rid()
+        }
     }
     
     // Update camera
-    camera_x = (!teleporting) ? player.x as float + 32.0f - captViewWidth() / 2.0f : camera_x;
-    camera_x = (camera_x < 0.0f) ? 0.0f : (camera_x + captViewWidth() > scene_width) ? scene_width - captViewWidth() : camera_x;
+    updateCamera()
     
     // Update enemies
-    updateSpiders()
+    updateCrawlers()
     updateSwordfish()
+    
+    // Update bosses
+    if slime_boss.has, slime_boss.value.update()
     
     // Update cannon
     updateCannon()
+    
+    // Animate sign 'Press H' message
+    each Sign in signs {
+        target_opacity float = it.inRange() ? 1.0f : 0.0f
+        it.press_h_opacity = fabs(it.press_h_opacity - target_opacity) > 0.0001f ? it.press_h_opacity + (target_opacity - it.press_h_opacity) / 6.0f : target_opacity
+    }
+    
+    // Removed closed signboards
+    if signboard.has && signboard.value.closed(), signboard.rid()
+    
+    // Animate signboards
+    if signboard.has, signboard.value.update()
+    
+    // Animate collected resources
+    each CollectedResource in collected_resources {
+        target_screen_x float = 1792.0f + 14.0f
+        target_screen_y float = 32.0f + 14.0f
+        
+        it.x = (it.x < target_screen_x - 4.0f) ? it.x + (target_screen_x - it.x) / 4.0f : target_screen_x
+        it.y = (it.y > target_screen_y + 4.0f) ? it.y + (target_screen_y - it.y) / 4.0f : target_screen_y
+        
+        if it.x == target_screen_x && it.y == target_screen_y {
+            collected_resources.remove(idx--)
+            continue
+        }
+    }
+    
+    // Scene events
+    if scene == 11 && crawlers.length == 0 && !slime_boss.has && exit_disabled && !portal_enabler.has,
+        portal_enabler.set(portalEnabler(928, 480, 64, 64))
     
     // Goto next scene if at exit portal
     if exit.has && !exit_disabled && exit.value.collision.intersecting(player.getAABB()) {
@@ -363,6 +452,30 @@ func on_step {
 func on_key(key int, scancode int, action int, mods int) {
     if action != GLFW_PRESS, return
     
+    // Resource cheats
+    #if cheats
+    if key == GLFW_KEY_F1, repeat 6, resources[idx] += 100
+    #end
+    
+    // Only allow resuming when game is paused
+    if key == controls.pause, pause(); return
+    if is_paused, return
+    
+    // Start game if on title screen
+    if scene == 0, gotoScene1()
+
+    if key == GLFW_KEY_T, gotoThemeTestScreen(); return
+    if key == GLFW_KEY_Y, cycleThemes(); return
+    
+    // Toggle inventory
+    if key == GLFW_KEY_E, toggleInventory()
+    
+    // Debug position
+    if key == GLFW_KEY_P, print("rx: %, ry: %, x32: %, y32: %" % player.x % player.y % (player.x - player.x % 32) % (player.y - player.y % 32))
+    
+    // Don't allow main game actions when inventory is open
+    if inventory_open, controlInventory(key); return
+    
     // Changing Control Schemes
     if controls == wasd {
         if key == GLFW_KEY_UP || key == GLFW_KEY_DOWN || key == GLFW_KEY_LEFT || key == GLFW_KEY_RIGHT,
@@ -370,6 +483,12 @@ func on_key(key int, scancode int, action int, mods int) {
     } else if controls == arrows {
         if key == GLFW_KEY_W || key == GLFW_KEY_S || key == GLFW_KEY_A || key == GLFW_KEY_D,
             controls = wasd
+    }
+    
+    // Reading signs
+    if key == controls.interact {
+        if signboard.has, signboard.value.close()
+        else each Sign in signs, if it.inRange(), it.read(); break
     }
     
     if item == Item::STAR {
@@ -388,6 +507,7 @@ func on_key(key int, scancode int, action int, mods int) {
     } else if item == Item::CANNON {
         if key == controls.a && cannon.has {
             c *Cannon = &cannon.value
+            
             // Ignite
             particles.add(particle(flame, c.x + ((c.direction == 1) ? -4 : 120) - 16, c.y - 16, 64, 64))
             
@@ -408,13 +528,17 @@ func on_key(key int, scancode int, action int, mods int) {
                 cannon.set(newCannon)
             }
         }
+    } else if item == Item::DOUBLEJUMP && key == controls.up {
+        unless playerIsInWater() || double_jumped, player.vy = -20; double_jumped = true
     }
     
-    if key == controls.pause, pause()
+    #if cheats
+    additional usize = 0
+    if captKeyHeld(GLFW_KEY_LEFT_SHIFT),   additional += 10
+    if captKeyHeld(GLFW_KEY_LEFT_CONTROL), additional += 20
     
-    repeat 9 {
-        if key == GLFW_KEY_1 + idx, gotoScene(1 + idx)
-    }
+    repeat 10, if key == GLFW_KEY_0 + idx, gotoScene(additional + (idx == 0 ? 10uz : idx))
+    #end
 }
 
 func on_draw {
@@ -434,11 +558,11 @@ func on_draw {
     unless is_paused {
         sky_shift = cast float (glfwGetTime() * 1000.0f - accumulated_pause_time * 1000.0f) / 100.0f % captViewWidth()
     }
-    captDrawTexture(sky, ceilf(0.0f - sky_shift), 0.0f, captViewWidth(), captViewHeight())
-    captDrawTexture(sky, 0.0f - sky_shift + captViewWidth(), 0.0f, captViewWidth(), captViewHeight())
+    captDrawTexture(theme.sky, ceilf(0.0f - sky_shift), 0.0f, captViewWidth(), captViewHeight())
+    captDrawTexture(theme.sky, 0.0f - sky_shift + captViewWidth(), 0.0f, captViewWidth(), captViewHeight())
     
     // Draw background portion of lake
-    each Lake in [lakes.items, lakes.length], drawLakeBehind(it)
+    each Lake in lakes, drawLakeBehind(it)
     
     // Draw exit portal if one exists
     if exit.has {
@@ -458,6 +582,7 @@ func on_draw {
             (&entrance as *Region).getVisualHeight() as float)
     }
     
+    each Sign in signs, drawSign(it)
     each Platform in platforms, drawPlatform(it)
     each Bridge in bridges, drawBridge(it)
     each Lake in lakes, drawLakeUpFront(it)
@@ -469,7 +594,7 @@ func on_draw {
     if cannon_ball.has,
         drawFromCamera(ball, cannon_ball.value.x as float, cannon_ball.value.y as float, 32.0f, 32.0f)
     
-    each Particle in [particles.items, particles.length],
+    each Particle in particles,
         drawFromCamera(it.now(), (&it as *Region).getVisualX() as float, (&it as *Region).getVisualY() as float, (&it as *Region).getVisualWidth() as float, (&it as *Region).getVisualHeight() as float)
     
     if portal_enabler.has {
@@ -484,8 +609,9 @@ func on_draw {
         drawFromCamera(getImageForItem(it.item), r.getVisualX() as float, r.getVisualY() as float, r.getVisualWidth() as float, r.getVisualHeight() as float)
     }
     
-    each Spider in spiders,
-        drawFromCameraEx(it.now(), it.x as float, it.y as float - 32.0f, it.vx as float * 64.0f, 64.0f)
+    if slime_boss.has, slime_boss.value.draw()
+    
+    each Crawler in crawlers, drawCrawler(it)
     
     each Swordfish in swordfishes,
         drawFromCameraEx(it.now(), it.x as float, it.y as float, it.vx as float * 256.0f, 64.0f)
@@ -494,16 +620,38 @@ func on_draw {
     if item == Item::STAR, drawPlayer(shadow, 0.5f)
     
     // If alive render player otherwise render death animation
-    if is_dead, drawDeath()
-    else        drawPlayer(player, teleporting ? teleport_opacity : 1.0f)
+    if is_dead,             drawDeath()
+    else unless scene == 0, drawPlayer(player, teleporting ? teleport_opacity : 1.0f)
+    
+    if scene == 0 || scene == 1 {
+        drawFromCamera(how_to_play, 576.0f - 224.0f, 192.0f, 512.0f, 256.0f)
+    }
+    
+    if scene == 2002,
+        drawFromCamera(win, 576.0f - 224.0f, 192.0f, 512.0f, 128.0f)
+    
+    // Draw collected resources
+    each CollectedResource in collected_resources {
+        captDrawTexture(getImageForResource(it.resource), it.x, it.y, 64.0f, 64.0f)
+    }
+    
+    if inventory_bg_shade != 0.0f {
+        captDrawOpacity(inventory_bg_shade)
+        captDrawTexture(bullet, 0.0f, 0.0f, captViewWidth(), captViewHeight())
+        captDrawOpacity(1.0f)
+    }
     
     // Draw powerup slot
-    captDrawTexture(slot, 1792.0f, 32.0f, 96.0f, 96.0f)
+    unless scene == 0,
+        captDrawTexture(slot, 1792.0f, 32.0f, 96.0f, 96.0f)
+    
+    // Draw signboard
+    if signboard.has, signboard.value.draw()
+    
+    // Draw inventory
+    if inventory_open, drawInventory()
     
     // Draw acquired powerup
     if !is_dead && item != Item::NONE,
         captDrawTexture(getImageForItem(item), item_screen_x, item_screen_y, 64.0f, 64.0f)
-    
-    if scene == 8,
-        drawFromCamera(win, 576.0f - 224.0f, 192.0f, 512.0f, 128.0f)
 }
