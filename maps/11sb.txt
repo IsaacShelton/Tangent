@@ -1,0 +1,10 @@
+scene_width = 1920.0f
+setThemeByID(2)
+createPlatform(192, 704, 1536, 128, DECOR_BUSH)
+createPlatform(1344, 1152, 256, 256, DECOR_NONE)
+lakes.add(lake(0, 768, 1920, 512))
+exit_disabled = true
+player.create(416, 640)
+sceneDefaultShadows()
+entrance.set(portal(384, 576))
+exit.set(portal(1408, 1024))

@@ -1,0 +1,319 @@
+
+#if !mapmaker
+    #print_error "export.adept: File only for used map maker"
+    #halt
+#end
+
+import 'sys/cstdio.adept'
+
+func exportPseudoCode {
+    exportPseudoCode(scan("Enter export filename: "))
+}
+
+func saveBinary {
+    saveBinary(scan("Enter save filename: "))
+}
+
+func loadBinary {
+    loadBinary(scan("Enter load filename: "))
+}
+
+struct BinaryPlatform (x, y, w, h, decor int)
+struct BinaryLake (x, y, w, h int)
+struct BinaryBridge (x, y, w int)
+struct BinaryPortal (has bool, x, y int)
+struct BinaryCrawler (kind, x, y, speed, direction int)
+struct BinarySwordfish (kind, x, y, speed, interval, direction int)
+
+func binary(this *Platform) BinaryPlatform {
+    p BinaryPlatform = undef
+    p.x = this.collision.x
+    p.y = this.collision.y
+    p.w = this.collision.w
+    p.h = this.collision.h
+    p.decor = this.decor_id
+    return p
+}
+
+func binary(this *Lake) BinaryLake {
+    l BinaryLake = undef
+    l.x = this.collision.x
+    l.y = this.collision.y
+    l.w = this.collision.w
+    l.h = this.collision.h
+    return l
+}
+
+func binary(this *Bridge) BinaryBridge {
+    b BinaryBridge = undef
+    b.x = this.collision.x
+    b.y = this.collision.y
+    b.w = this.collision.w
+    return b
+}
+
+func binary(this *<Portal> Optional) BinaryPortal {
+    p BinaryPortal = undef
+    p.has = this.has
+    p.x = this.value.visual.x
+    p.y = this.value.visual.y
+    return p
+}
+
+func binary(this *Crawler) BinaryCrawler {
+    c BinaryCrawler = undef
+    c.kind = this.kind
+    c.x = this.x
+    c.y = this.y
+    c.speed = this.speed
+    c.direction = this.vx
+    return c
+}
+
+func binary(this *Swordfish) BinarySwordfish {
+    s BinarySwordfish = undef
+    s.kind = this.kind
+    s.x = this.x
+    s.y = this.y
+    s.direction = this.vx
+    s.speed = this.speed
+    s.interval = this.interval
+    return s
+}
+
+func exportPseudoCode(filename String) {
+    filename_cstr *ubyte = filename.cstr()
+    defer delete filename_cstr
+    
+    file *FILE = fopen(filename_cstr, 'w')
+    defer fclose(file)
+    
+    // Determine scene width
+    max_x int = 1920
+    each Lake in lakes, if (&it as *Region).getMaxX() > max_x, max_x = (&it as *Region).getMaxX()
+    each Platform in platforms, if (&it as *Region).getMaxX() > max_x, max_x = (&it as *Region).getMaxX()
+    fprintf(file, 'scene_width = %d.0f\n', max_x)
+    
+    fprintf(file, 'setThemeByID(%d)\n', getThemeID())
+    
+    each Platform in platforms,
+        fprintf(file, 'createPlatform(%d, %d, %d, %d, %s)\n', it.collision.x, it.collision.y, it.collision.w, it.collision.h, getExportDecorConstant(it.decor_id))
+    
+    each Lake in lakes,
+        fprintf(file, 'lakes.add(lake(%d, %d, %d, %d))\n', it.collision.x, it.collision.y, it.collision.w, it.collision.h)
+    
+    each Bridge in bridges,
+        fprintf(file, 'bridges.add(bridge(%d, %d, %d))\n', it.collision.x, it.collision.y, it.collision.w)
+    
+    each Crawler in crawlers,
+        fprintf(file, 'crawlers.add(crawler(%d, %d, %d, %d, %s))\n', it.kind, it.x, it.y, it.speed, it.vx < 0 ? 'true' : 'false')
+    
+    each Swordfish in swordfishes,
+        fprintf(file, 'swordfishes.add(swordfish(%d, %d, %d, %d, %d, %s))\n', it.kind, it.x, it.y, it.speed, it.interval, it.vx < 0 ? 'true' : 'false')
+    
+    each Sign in signs {
+        text *ubyte = it.text.cstr()
+        fprintf(file, 'signs.add(sign(%d, %d, "%s"))\n', it.x, it.y, text)
+        delete text
+    }
+    
+    fprintf(file, 'exit_disabled = %s\n', exit_disabled ? 'true' : 'false')
+    
+    if entrance.has {
+        fprintf(file, 'player.create(%d, %d)\n', entrance.value.visual.x + 32, entrance.value.visual.y + 64)
+        fprintf(file, 'sceneDefaultShadows()\n')
+        fprintf(file, 'entrance.set(portal(%d, %d))\n', entrance.value.visual.x, entrance.value.visual.y)
+    }
+    
+    if exit.has,
+        fprintf(file, 'exit.set(portal(%d, %d))\n', exit.value.visual.x, exit.value.visual.y)
+    
+    fprintf(file, 'updateCamera()\n')
+    print("Exported to %" % filename)
+}
+
+func getExportDecorConstant(decor_id int) *ubyte {
+    if decor_id == 0,  return 'DECOR_NONE'
+    if decor_id == 1,  return 'DECOR_BUSH'
+    if decor_id == 2,  return 'DECOR_FLOWERA'
+    if decor_id == 3,  return 'DECOR_FLOWERB'
+    if decor_id == 4,  return 'DECOR_ROCKA'
+    if decor_id == 5,  return 'DECOR_ROCKB'
+    if decor_id == 6,  return 'DECOR_MUSHROOMA'
+    if decor_id == 7,  return 'DECOR_MUSHROOMB'
+    if decor_id == 8,  return 'DECOR_STUMP'
+    if decor_id == 9,  return 'DECOR_GRASSA'
+    if decor_id == 10, return 'DECOR_GRASSB'
+    if decor_id == 11, return 'DECOR_GRASSC'
+    if decor_id == 12, return 'DECOR_FENCE'
+    return 'DECOR_EXPORTED_UNRECOGNIZED'
+}
+
+func saveBinary(filename String) {
+    filename_cstr *ubyte = filename.cstr()
+    defer delete filename_cstr
+    
+    file *FILE = fopen(filename_cstr, 'wb')
+    unless file, print("Failed to open save file"); return
+    
+    defer fclose(file)
+    
+    // [0] Binary version (final data group id)
+    binary_version int = 9
+    fwrite(&binary_version, sizeof int, 1, file)
+    
+    // [1] Theme ID
+    theme_id int = getThemeID()
+    fwrite(&theme_id, sizeof int, 1, file)
+    
+    // [2] lakes.length
+    fwrite(&lakes.length, sizeof usize, 1, file)
+
+    each Lake in lakes {
+        l BinaryLake = it.binary()
+        fwrite(&l, sizeof BinaryLake, 1, file)
+    }
+    
+    // [3] platforms.length
+    fwrite(&platforms.length, sizeof usize, 1, file)
+    
+    each Platform in platforms {
+        p BinaryPlatform = it.binary()
+        fwrite(&p, sizeof BinaryPlatform, 1, file)
+    }
+    
+    // [4] bridges.length
+    fwrite(&bridges.length, sizeof usize, 1, file)
+    
+    each Bridge in bridges {
+        b BinaryBridge = it.binary()
+        fwrite(&b, sizeof BinaryBridge, 1, file)
+    }
+    
+    // [5] exit_disabled
+    fwrite(&exit_disabled, sizeof bool, 1, file)
+    
+    // [6] entrance
+    entrance_binary_portal BinaryPortal = entrance.binary()
+    fwrite(&entrance_binary_portal, sizeof BinaryPortal, 1, file)
+    
+    // [7] exit
+    exit_binary_portal BinaryPortal = exit.binary()
+    fwrite(&exit_binary_portal, sizeof BinaryPortal, 1, file)
+    
+    // [~] Done
+    defer print("Saved to %" % filename)
+    
+    // [8] crawlers.length
+    if binary_version < 8, return
+    fwrite(&crawlers.length, sizeof usize, 1, file)
+    
+    each Crawler in crawlers {
+        c BinaryCrawler = it.binary()
+        fwrite(&c, sizeof BinaryCrawler, 1, file)
+    }
+    
+    // [9] swordfishes.length
+    if binary_version < 9, return
+    fwrite(&swordfishes.length, sizeof usize, 1, file)
+    
+    each Swordfish in swordfishes {
+        s BinarySwordfish = it.binary()
+        fwrite(&s, sizeof BinarySwordfish, 1, file)
+    }
+}
+
+func loadBinary(filename String) {
+    filename_cstr *ubyte = filename.cstr()
+    defer delete filename_cstr
+    
+    file *FILE = fopen(filename_cstr, 'rb')
+    unless file, print("Failed to open load file"); return
+    
+    defer fclose(file)
+
+    lakes.clear()
+    platforms.clear()
+    bridges.clear()
+    crawlers.clear()
+    swordfishes.clear()
+    signs.clear()
+    entrance.rid()
+    exit.rid()
+    
+    lakes_count, platforms_count, bridges_count, crawlers_count, swordfishes_count usize = undef
+    
+    // [0] Binary version (final data group id)
+    binary_version int = undef
+    fread(&binary_version, sizeof int, 1, file)
+    
+    // [1] Theme ID
+    theme_id int = undef
+    fread(&theme_id, sizeof int, 1, file)
+    setThemeByID(theme_id)
+    
+    // [2] lakes.length
+    fread(&lakes_count, sizeof usize, 1, file)
+    
+    repeat lakes_count {
+        l BinaryLake = undef
+        fread(&l, sizeof BinaryLake, 1, file)
+        lakes.add(lake(l.x, l.y, l.w, l.h))
+    }
+    
+    // [3] platforms.length
+    fread(&platforms_count, sizeof usize, 1, file)
+    
+    repeat platforms_count {
+        p BinaryPlatform = undef
+        fread(&p, sizeof BinaryPlatform, 1, file)
+        createPlatform(p.x, p.y, p.w, p.h, p.decor)
+    }
+    
+    // [4] bridges.length
+    fread(&bridges_count, sizeof usize, 1, file)
+    
+    repeat bridges_count {
+        b BinaryBridge = undef
+        fread(&b, sizeof BinaryBridge, 1, file)
+        bridges.add(bridge(b.x, b.y, b.w))
+    }
+    
+    // [5] exit_disabled
+    fread(&exit_disabled, sizeof bool, 1, file)
+    
+    // [6] entrance
+    entrance_binary_portal BinaryPortal = undef
+    fread(&entrance_binary_portal, sizeof BinaryPortal, 1, file)
+    if entrance_binary_portal.has,
+        entrance.set(portal(entrance_binary_portal.x, entrance_binary_portal.y))
+    
+    // [7] exit
+    exit_binary_portal BinaryPortal = undef
+    fread(&exit_binary_portal, sizeof BinaryPortal, 1, file)
+    if exit_binary_portal.has,
+        exit.set(portal(exit_binary_portal.x, exit_binary_portal.y))
+    
+    // [~] Done
+    defer print("Loaded %" % filename)
+    
+    // [8] crawlers.length
+    if binary_version < 8, return
+    fread(&crawlers_count, sizeof usize, 1, file)
+    
+    repeat crawlers_count {
+        c BinaryCrawler = undef
+        fread(&c, sizeof BinaryCrawler, 1, file)
+        crawlers.add(crawler(c.kind, c.x, c.y, c.speed, c.direction < 0))
+    }
+    
+    // [9] swordfishes.length
+    if binary_version < 9, return
+    fread(&swordfishes_count, sizeof usize, 1, file)
+    
+    repeat swordfishes_count {
+        s BinarySwordfish = undef
+        fread(&s, sizeof BinarySwordfish, 1, file)
+        swordfishes.add(swordfish(s.kind, s.x, s.y, s.speed, s.interval, s.direction < 0))
+    }
+}

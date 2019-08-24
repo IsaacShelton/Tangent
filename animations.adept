@@ -1,0 +1,63 @@
+
+wave GameAnimation
+wave_th2 GameAnimation
+walk GameAnimation
+swim GameAnimation
+gun_walk GameAnimation
+gun_swim GameAnimation
+cannoneer_walk GameAnimation
+cannoneer_swim GameAnimation
+spider_animation GameAnimation
+beetle_animation GameAnimation
+slime_animation GameAnimation
+swordfish_animation GameAnimation
+inwards_portal GameAnimation
+outwards_portal GameAnimation
+disabled_portal GameAnimation
+smoke GameAnimation
+flame GameAnimation
+enabler GameAnimation
+coin GameAnimation
+
+func loadAnimations(assetsFolder String) {
+    wave = gameAnimation(assetsFolder + "wave%.png", 0, 3, 10)
+    wave_th2 = gameAnimation(assetsFolder + "wave%_th2.png", 0, 3, 10)
+    walk = gameAnimation(assetsFolder + "walk%.png", 0, 3, 4)
+    swim = gameAnimation(assetsFolder + "swim%.png", 0, 5, 6)
+    gun_walk = gameAnimation(assetsFolder + "gunWalk%.png", 0, 5, 6)
+    gun_swim = gameAnimation(assetsFolder + "gunSwim%.png", 0, 5, 6)
+    cannoneer_walk = gameAnimation(assetsFolder + "cannoneerWalk%.png", 0, 3, 6)
+    cannoneer_swim = gameAnimation(assetsFolder + "cannoneerSwim%.png", 0, 5, 6)
+    spider_animation = gameAnimation(assetsFolder + "spider%.png", 0, 3, 4)
+    beetle_animation = gameAnimation(assetsFolder + "beetle%.png", 0, 3, 4)
+    slime_animation = gameAnimation(assetsFolder + "slime%.png", 0, 1, 15)
+    swordfish_animation = gameAnimation(assetsFolder + "swordfish%.png", 0, 1, 30)
+    inwards_portal = gameAnimation(assetsFolder + "portal%.png", 4, 0, 15)
+    outwards_portal = gameAnimation(assetsFolder + "portal%.png", 0, 4, 15)
+    disabled_portal = gameAnimation(assetsFolder + "disabled_portal%.png", 0, 16, 5)
+    smoke = gameAnimation(assetsFolder + "smoke%.png", 0, 4, 1)
+    flame = gameAnimation(assetsFolder + "flame%.png", 0, 1, 1)
+    enabler = gameAnimation(assetsFolder + "enabler%.png", 0, 1, 20)
+    coin = gameAnimation(assetsFolder + "coin%.png", 0, 7, 5)
+}
+
+func destroyAnimations {
+    wave.destroy()
+    walk.destroy()
+    swim.destroy()
+    gun_walk.destroy()
+    gun_swim.destroy()
+    cannoneer_walk.destroy()
+    cannoneer_swim.destroy()
+    spider_animation.destroy()
+    beetle_animation.destroy()
+    slime_animation.destroy()
+    swordfish_animation.destroy()
+    inwards_portal.destroy()
+    outwards_portal.destroy()
+    disabled_portal.destroy()
+    smoke.destroy()
+    flame.destroy()
+    enabler.destroy()
+    coin.destroy()
+}

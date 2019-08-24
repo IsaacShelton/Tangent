@@ -1,0 +1,9 @@
+
+struct Theme (
+    sky CaptTexture,
+    wave GameAnimation, water,
+    platform_n, platform_ne, platform_nw,
+    platform_s, platform_se, platform_sw,
+    platform_e, platform_w,  platform_c CaptTexture,
+    bushl, bushr CaptTexture
+)

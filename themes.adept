@@ -1,0 +1,61 @@
+
+theme *Theme
+theme1 Theme
+theme2 Theme
+
+func loadThemes {
+
+    // Basic Theme    
+    theme1.sky = sky
+    theme1.wave = wave
+    theme1.water = water
+    theme1.platform_n = platform_north
+    theme1.platform_ne = platform_north_east
+    theme1.platform_nw = platform_north_west
+    theme1.platform_s = platform_south
+    theme1.platform_se = platform_south_east
+    theme1.platform_sw = platform_south_west
+    theme1.platform_e = platform_east
+    theme1.platform_w = platform_west
+    theme1.platform_c = platform_center
+    theme1.bushr = bushr
+    theme1.bushl = bushl
+    
+    // Alternate Theme 1
+    theme2.sky = sky_th2
+    theme2.wave = wave_th2
+    theme2.water = water_th2
+    theme2.platform_n = platform_north_th2
+    theme2.platform_ne = platform_north_east_th2
+    theme2.platform_nw = platform_north_west_th2
+    theme2.platform_s = platform_south_th2
+    theme2.platform_se = platform_south_east_th2
+    theme2.platform_sw = platform_south_west_th2
+    theme2.platform_e = platform_east_th2
+    theme2.platform_w = platform_west_th2
+    theme2.platform_c = platform_center_th2
+    theme2.bushr = bushr_th2
+    theme2.bushl = bushl_th2
+    
+    theme = &theme1
+}
+
+func cycleThemes {
+    if theme == &theme1, theme = &theme2
+    else theme = &theme1
+}
+
+func getThemeID int {
+    return getThemeID(theme)
+}
+
+func getThemeID(theme *Theme) int {
+    if theme == &theme1, return 1
+    if theme == &theme2, return 2
+    return 1
+}
+
+func setThemeByID(id int) {
+    if id == 1, theme = &theme1
+    if id == 2, theme = &theme2
+}

@@ -1,0 +1,63 @@
+
+MIN_CRAWLER == SPIDER
+SPIDER == 1
+BEETLE == 2
+SLIME  == 3
+MAX_CRAWLER == SLIME
+
+struct Crawler (kind, x, y, vx, vy, speed int, animation GameAnimation, potential_drop Resource) {
+    func update {
+        this.animation.update()
+    }
+    
+    func now CaptTexture
+        = this.animation.now()
+    
+    func getAABB AABB
+        = AABB(this.x, this.y, 64, 32)
+    
+    func getAABB(adj_x, adj_y int) AABB
+        = AABB(this.x + adj_x, this.y + adj_y, 64, 32)
+    
+    func getDroppedResource Resource {
+        return captRandom() < 0.5 ? this.potential_drop : Resource::NONE
+    }
+    
+    func drop {
+        dropped Resource = this.getDroppedResource()
+        
+        if dropped != Resource::NONE {
+            resources[dropped as usize - 1] += 1
+            addCollectedResource(dropped, this.x as float - camera_x, this.y as float - camera_y - 32.0f)
+        }
+    }
+}
+
+func crawler(kind, x, y, speed int, reverse bool) Crawler {
+    crawler Crawler = undef
+    crawler.kind = kind
+    crawler.x = x
+    crawler.y = y
+    crawler.vx = reverse ? -1 : 1
+    crawler.vy = 0
+    crawler.speed = speed
+    
+    if kind == SPIDER {
+        crawler.animation = spider_animation.newInstance()
+        crawler.potential_drop = Resource::STRING
+    } else if kind == BEETLE {
+        crawler.animation = beetle_animation.newInstance()
+        crawler.potential_drop = Resource::WOOD
+    } else if kind == SLIME {
+        crawler.animation = slime_animation.newInstance()
+        crawler.potential_drop = Resource::SLIME
+    } else {
+        crawler.animation = spider_animation.newInstance()
+        crawler.potential_drop = Resource::NONE
+    }
+    
+    return crawler
+}
+
+func crawler(kind, x, y int) Crawler = crawler(kind, x, y, 1, false)
+func crawler(kind, x, y, speed int) Crawler = crawler(kind, x, y, speed, false)

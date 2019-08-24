@@ -1,0 +1,259 @@
+
+sky CaptTexture
+platform_north CaptTexture
+platform_north_east CaptTexture
+platform_north_west CaptTexture
+platform_south CaptTexture
+platform_south_east CaptTexture
+platform_south_west CaptTexture
+platform_east CaptTexture
+platform_west CaptTexture
+platform_center CaptTexture
+water CaptTexture
+bushl CaptTexture
+bushr CaptTexture
+
+sky_th2 CaptTexture
+platform_north_th2 CaptTexture
+platform_north_east_th2 CaptTexture
+platform_north_west_th2 CaptTexture
+platform_south_th2 CaptTexture
+platform_south_east_th2 CaptTexture
+platform_south_west_th2 CaptTexture
+platform_east_th2 CaptTexture
+platform_west_th2 CaptTexture
+platform_center_th2 CaptTexture
+water_th2 CaptTexture
+bushl_th2 CaptTexture
+bushr_th2 CaptTexture
+
+idle CaptTexture
+death CaptTexture
+gun_idle CaptTexture
+gun_death CaptTexture
+cannoneer_idle CaptTexture
+cannoneer_death CaptTexture
+bridge0 CaptTexture
+bridge1 CaptTexture
+parachute CaptTexture
+cannoneer_parachute CaptTexture
+flower_a CaptTexture
+flower_b CaptTexture
+rock_a CaptTexture
+rock_b CaptTexture
+mushroom_a CaptTexture
+mushroom_b CaptTexture
+stump CaptTexture
+grass_a CaptTexture
+grass_b CaptTexture
+grass_c CaptTexture
+fence_a CaptTexture
+fence_b CaptTexture
+slot CaptTexture
+star CaptTexture
+wing CaptTexture
+gun CaptTexture
+doublejump CaptTexture
+bullet CaptTexture
+cannon_power CaptTexture
+cannon_idle CaptTexture
+ball CaptTexture
+win CaptTexture
+how_to_play CaptTexture
+testinv CaptTexture
+invselected CaptTexture
+number0 CaptTexture
+number1 CaptTexture
+number2 CaptTexture
+number3 CaptTexture
+number4 CaptTexture
+number5 CaptTexture
+number6 CaptTexture
+number7 CaptTexture
+number8 CaptTexture
+number9 CaptTexture
+string CaptTexture
+slime CaptTexture
+wood CaptTexture
+feather CaptTexture
+metal CaptTexture
+crystal CaptTexture
+crafting_mode CaptTexture
+inventory_mode CaptTexture
+font CaptTexture
+sign CaptTexture
+signboard_texture CaptTexture
+
+func loadTextures(assetsFolder String) {
+    sky = captTexture(assetsFolder + "skywrap.png", false)
+    platform_north = captTexture(assetsFolder + "platformn.png", false)
+    platform_north_east = captTexture(assetsFolder + "platformne.png", false)
+    platform_north_west = captTexture(assetsFolder + "platformnw.png", false)
+    platform_south = captTexture(assetsFolder + "platforms.png", false)
+    platform_south_east = captTexture(assetsFolder + "platformse.png", false)
+    platform_south_west = captTexture(assetsFolder + "platformsw.png", false)
+    platform_east = captTexture(assetsFolder + "platforme.png", false)
+    platform_west = captTexture(assetsFolder + "platformw.png", false)
+    platform_center = captTexture(assetsFolder + "platformc.png", false)
+    water = captTexture(assetsFolder + "water.png", false)
+    bushl = captTexture(assetsFolder + "bushl.png", false)
+    bushr = captTexture(assetsFolder + "bushr.png", false)
+    
+    sky_th2 = captTexture(assetsFolder + "skywrap_th2.png", false)
+    platform_north_th2 = captTexture(assetsFolder + "platformn_th2.png", false)
+    platform_north_east_th2 = captTexture(assetsFolder + "platformne_th2.png", false)
+    platform_north_west_th2 = captTexture(assetsFolder + "platformnw_th2.png", false)
+    platform_south_th2 = captTexture(assetsFolder + "platforms_th2.png", false)
+    platform_south_east_th2 = captTexture(assetsFolder + "platformse_th2.png", false)
+    platform_south_west_th2 = captTexture(assetsFolder + "platformsw_th2.png", false)
+    platform_east_th2 = captTexture(assetsFolder + "platforme_th2.png", false)
+    platform_west_th2 = captTexture(assetsFolder + "platformw_th2.png", false)
+    platform_center_th2 = captTexture(assetsFolder + "platformc_th2.png", false)
+    water_th2 = captTexture(assetsFolder + "water_th2.png", false)
+    bushl_th2 = captTexture(assetsFolder + "bushl_th2.png", false)
+    bushr_th2 = captTexture(assetsFolder + "bushr_th2.png", false)
+    
+    idle = captTexture(assetsFolder + "idle.png", false)
+    death = captTexture(assetsFolder + "death.png", false)
+    gun_idle = captTexture(assetsFolder + "gunIdle.png", false)
+    gun_death = captTexture(assetsFolder + "gunDeath.png", false)
+    cannoneer_idle = captTexture(assetsFolder + "cannoneerIdle.png", false)
+    cannoneer_death = captTexture(assetsFolder + "cannoneerDeath.png", false)
+    bridge0 = captTexture(assetsFolder + "bridge0.png", false)
+    bridge1 = captTexture(assetsFolder + "bridge1.png", false)
+    parachute = captTexture(assetsFolder + "parachute.png", false)
+    cannoneer_parachute = captTexture(assetsFolder + "cannoneerParachute.png", false)
+    flower_a = captTexture(assetsFolder + "flowera.png", false)
+    flower_b = captTexture(assetsFolder + "flowerb.png", false)
+    rock_a = captTexture(assetsFolder + "rocka.png", false)
+    rock_b = captTexture(assetsFolder + "rockb.png", false)
+    mushroom_a = captTexture(assetsFolder + "mushrooma.png", false)
+    mushroom_b = captTexture(assetsFolder + "mushroomb.png", false)
+    stump = captTexture(assetsFolder + "stump.png", false)
+    grass_a = captTexture(assetsFolder + "grassa.png", false)
+    grass_b = captTexture(assetsFolder + "grassb.png", false)
+    grass_c = captTexture(assetsFolder + "grassc.png", false)
+    fence_a = captTexture(assetsFolder + "fencea.png", false)
+    fence_b = captTexture(assetsFolder + "fenceb.png", false)
+    slot = captTexture(assetsFolder + "slot.png", false)
+    star = captTexture(assetsFolder + "star.png", false)
+    wing = captTexture(assetsFolder + "wing.png", false)
+    gun = captTexture(assetsFolder + "gun.png", false)
+    doublejump = captTexture(assetsFolder + "doublejump.png", false)
+    bullet = captTexture(assetsFolder + "bullet.png", false)
+    cannon_power = captTexture(assetsFolder + "cannonPower.png", false)
+    cannon_idle = captTexture(assetsFolder + "cannon0.png", false)
+    ball = captTexture(assetsFolder + "ball.png", false)
+    win = captTexture(assetsFolder + "win.png", false)
+    how_to_play = captTexture(assetsFolder + "controls.png", false)
+    testinv = captTexture(assetsFolder + "testinv.png", false)
+    invselected = captTexture(assetsFolder + "invselected.png", false)
+    number0 = captTexture(assetsFolder + "0.png", false)
+    number1 = captTexture(assetsFolder + "1.png", false)
+    number2 = captTexture(assetsFolder + "2.png", false)
+    number3 = captTexture(assetsFolder + "3.png", false)
+    number4 = captTexture(assetsFolder + "4.png", false)
+    number5 = captTexture(assetsFolder + "5.png", false)
+    number6 = captTexture(assetsFolder + "6.png", false)
+    number7 = captTexture(assetsFolder + "7.png", false)
+    number8 = captTexture(assetsFolder + "8.png", false)
+    number9 = captTexture(assetsFolder + "9.png", false)
+    string = captTexture(assetsFolder + "string_item.png", false)
+    slime = captTexture(assetsFolder + "slime_item.png", false)
+    wood = captTexture(assetsFolder + "wood_item.png", false)
+    feather = captTexture(assetsFolder + "feather_item.png", false)
+    metal = captTexture(assetsFolder + "metal_item.png", false)
+    crystal = captTexture(assetsFolder + "crystal_item.png", false)
+    crafting_mode = captTexture(assetsFolder + "crafting_mode.png", false)
+    inventory_mode = captTexture(assetsFolder + "inventory_mode.png", false)
+    font = captTexture(assetsFolder + "font.png", false)
+    sign = captTexture(assetsFolder + "sign.png", false)
+    signboard_texture = captTexture(assetsFolder + "signboard.png", false)
+}
+
+func destroyTextures {
+    sky.free()
+    platform_north.free()
+    platform_north_east.free()
+    platform_north_west.free()
+    platform_south.free()
+    platform_south_east.free()
+    platform_south_west.free()
+    platform_east.free()
+    platform_west.free()
+    platform_center.free()
+    water.free()
+    bushl.free()
+    bushr.free()
+    
+    sky_th2.free()
+    platform_north_th2.free()
+    platform_north_east_th2.free()
+    platform_north_west_th2.free()
+    platform_south_th2.free()
+    platform_south_east_th2.free()
+    platform_south_west_th2.free()
+    platform_east_th2.free()
+    platform_west_th2.free()
+    platform_center_th2.free()
+    water_th2.free()
+    bushl_th2.free()
+    bushr_th2.free()
+    
+    idle.free()
+    death.free()
+    gun_idle.free()
+    gun_death.free()
+    cannoneer_idle.free()
+    cannoneer_death.free()
+    bridge0.free()
+    bridge1.free()
+    parachute.free()
+    cannoneer_parachute.free()
+    flower_a.free()
+    flower_b.free()
+    rock_a.free()
+    rock_b.free()
+    mushroom_a.free()
+    mushroom_b.free()
+    stump.free()
+    grass_a.free()
+    grass_b.free()
+    grass_c.free()
+    fence_a.free()
+    fence_b.free()
+    slot.free()
+    star.free()
+    wing.free()
+    gun.free()
+    doublejump.free()
+    bullet.free()
+    cannon_power.free()
+    cannon_idle.free()
+    ball.free()
+    win.free()
+    how_to_play.free()
+    testinv.free()
+    invselected.free()
+    number0.free()
+    number1.free()
+    number2.free()
+    number3.free()
+    number4.free()
+    number5.free()
+    number6.free()
+    number7.free()
+    number8.free()
+    number9.free()
+    string.free()
+    slime.free()
+    wood.free()
+    feather.free()
+    metal.free()
+    crystal.free()
+    crafting_mode.free()
+    inventory_mode.free()
+    font.free()
+    sign.free()
+    signboard_texture.free()
+}

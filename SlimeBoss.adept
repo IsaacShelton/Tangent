@@ -1,0 +1,88 @@
+
+struct SlimeBoss (x, y, vx, vy, health int, animation GameAnimation) {
+    func create(x, y int) {
+        this.x = x
+        this.y = y
+        this.vx = -1
+        this.vy = 0
+        this.health = 10
+        this.animation = slime_animation.newInstance()
+    }
+    
+    func draw {
+        drawFromCameraEx(this.animation.now(), this.x as float, this.y as float - 64.0f, 128.0f * this.vx as float, 128.0f)
+    }
+    
+    func getAABB AABB = AABB(this.x, this.y, 128, 64)
+    func getAABB(adj_x, adj_y int) AABB = AABB(this.x + adj_x, this.y + adj_y, 128, 64)
+    
+    #if !mapmaker    
+        func update {
+            this.animation.update()
+            
+            // Handle landing on ground
+            ground *Region = collidingGround(this.getAABB(0, 1))
+            this.vy = (ground != null) ? 0 : (this.vy < 24) ? this.vy + 1 : this.vy
+            
+            // Advance forward
+            this.x += this.vx * 3
+            collision *Region = collidingGround(this.getAABB())
+            
+            // Turn slime boss around if ran into something
+            if collision {
+                this.x = (this.vx > 0) ? collision.getX() - 64 : collision.getMaxX()
+                this.vx *= -1
+            }
+            
+            // Apply gravity to slime boss
+            this.y += this.vy
+            collision = collidingGround(this.getAABB())
+            
+            if collision {
+                this.y = (this.vy > 0) ? collision.getY() - 64 : collision.getMaxY()
+            }
+            
+            // Turn slime boss around if about to fall off
+            if ground && collidingGround(this.getAABB(this.vx * 128, 64)) == null {
+                this.vx *= -1
+            }
+            
+            // Handle player and slime boss collision
+            playerAABB AABB = player.getAABB()
+            if playerAABB.intersecting(this.getAABB()){
+                if player.vy > 0 && player.y + 32 < this.y + 16 {
+                    this.hurt(1)
+                    player.vy = -18
+                } else {
+                    killPlayer()
+                }
+            }
+        }
+    
+        func hurt(damage int) {
+            // Seperate into smaller slimes
+            if damage > this.health, damage = this.health
+            repeat damage, this.seperate()
+            
+            // Deal damage
+            this.health -= damage
+            
+            // Maybe switch direction
+            if captRandom() < 0.5, this.vx *= -1
+            
+            // Die if killed
+            if this.health <= 0, slime_boss.rid()
+        }
+        
+        func seperate {
+            // Spawn some smaller slimes moving at random speeds in random directions
+            parts int = cast int (captRandom() * 4.0) + 1
+            repeat parts, crawlers.add(crawler(SLIME, this.x + 32, this.y + 16, cast int (captRandom() * 4.0) + 1, captRandom() < 0.5))
+        }
+    #end
+}
+
+func create(this *<SlimeBoss> Optional, x, y int) {
+    this.value.create(x, y)
+    this.has = true
+}

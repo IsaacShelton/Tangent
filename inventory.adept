@@ -1,0 +1,67 @@
+
+func getInventoryX float = captViewWidth()  as float / 2.0f - 224.0f * 2.0f
+func getInventoryY float = captViewHeight() as float / 2.0f - 112.0f * 3.0f
+
+func toggleInventory {
+    inventory_open = !inventory_open
+    unless inventory_open, return
+    
+    inventory_selection_x = 0
+    inventory_selection_y = 0
+    crafting = false
+}
+
+func controlInventory(key int) {
+    if key == controls.alt_up, inventory_selection_y = inventory_selection_y == 0 ? 0 : inventory_selection_y - 1
+    if key == controls.left,   inventory_selection_x = inventory_selection_x == 0 ? 0 : inventory_selection_x - 1
+    if key == controls.down,   inventory_selection_y = inventory_selection_y == 2 ? 2 : inventory_selection_y + 1
+    if key == controls.right,  inventory_selection_x = inventory_selection_x == 5 ? 5 : inventory_selection_x + 1
+    
+    if key == controls.a {
+        index int = getInventorySelectionIndex()
+        
+        if crafting {
+            if craftable[index] != Item::NONE &&
+                    resources[0] >= craftable_prices[index].string &&
+                    resources[1] >= craftable_prices[index].slime &&
+                    resources[2] >= craftable_prices[index].wood &&
+                    resources[3] >= craftable_prices[index].feathers &&
+                    resources[4] >= craftable_prices[index].metal &&
+                    resources[5] >= craftable_prices[index].crystals {
+                addToInventory(craftable[index])
+                resources[0] -= craftable_prices[index].string
+                resources[1] -= craftable_prices[index].slime
+                resources[2] -= craftable_prices[index].wood
+                resources[3] -= craftable_prices[index].feathers
+                resources[4] -= craftable_prices[index].metal
+                resources[5] -= craftable_prices[index].crystals
+            }
+        } else {
+            unless inventory[index] == Item::NONE {
+                pickupItem(inventory[index], getInventoryItemX(index), getInventoryItemY(index))
+                inventory[index] = Item::NONE
+            }
+        }
+    }
+    
+    if key == controls.b {
+        crafting = !crafting
+        inventory_selection_x = 0
+        inventory_selection_y = 0
+    }
+}
+
+func clearInventory {
+    memset(&inventory, 0, 18 * sizeof Item)
+}
+
+func addToInventory(item Item) {
+    repeat 18, if inventory[idx] == Item::NONE,
+        inventory[idx] = item; return
+}
+
+func getInventoryItemRelX(id int) float = 16.0f + 96.0f * (id as int % 6) as float
+func getInventoryItemRelY(id int) float = (152.0f + 96.0f * (id as int / 6) as float) * (112.0f / 106.0f)
+func getInventoryItemX(id int) float = getInventoryX() + getInventoryItemRelX(id)
+func getInventoryItemY(id int) float = getInventoryY() + getInventoryItemRelY(id)
+func getInventorySelectionIndex usize = inventory_selection_x + inventory_selection_y * 6

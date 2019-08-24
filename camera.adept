@@ -1,0 +1,5 @@
+
+func updateCamera {
+    camera_x = (!teleporting) ? player.x as float + 32.0f - captViewWidth() / 2.0f : camera_x;
+    camera_x = (camera_x < 0.0f) ? 0.0f : (camera_x + captViewWidth() > scene_width) ? scene_width - captViewWidth() : camera_x;
+}

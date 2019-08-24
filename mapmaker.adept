@@ -1,0 +1,397 @@
+
+#set mapmaker true
+pragma compiler_supports '2.2'
+
+import 'AABB.adept'
+import 'Bullet.adept'
+import 'Cannon.adept'
+import 'CannonBall.adept'
+import 'ControlScheme.adept'
+import 'GameAnimation.adept'
+import 'GameImageEx.adept'
+import 'Item.adept'
+import 'Player.adept'
+import 'Region.adept'
+import 'Crawler.adept'
+import 'Swordfish.adept'
+import 'Optional.adept'
+import 'Theme.adept'
+import 'SlimeBoss.adept'
+import 'Text.adept'
+
+import 'globals.adept'
+import 'draw.adept'
+import 'themes.adept'
+import 'where.adept'
+import 'inventory.adept'
+import 'export.adept'
+
+import '2.2/basics.adept'
+import '2.2/List.adept'
+import 'captain_prototype/captain.adept'
+
+enum MapMakerPlacement (PLATFORM, LAKE, ENTRANCE, EXIT, BRIDGE, CRAWLER, SWORDFISH)
+
+mapmaker_zoom float
+mapmaker_grid bool
+mapmaker_placement MapMakerPlacement
+
+func main {
+    unless captPrepare(), return
+    
+    captOnSetup(func &on_setup)
+    captOnStep(func &on_step, 60)
+    captOnKey(func &on_key)
+    captOnClick(func &on_click, true)
+    captOnDraw(func &on_draw)
+    captOnExit(func &on_exit)
+    
+    captAddTypical(64.0f, 64.0f)
+    captAddTypical(64.0f, 32.0f)
+    captAddTypical(128.0f, 128.0f)
+    
+    captCustomView(1920.0f, 1280.0f)
+    captStart('Tangent Mapmaker', 960, 640, false)
+}
+
+func on_setup {
+    loadAssets()
+    loadThemes()
+    setupState()
+    mapmaker_zoom = 1.0f
+    mapmaker_grid = true
+    mapmaker_placement = MapMakerPlacement::LAKE
+}
+
+func on_key(key, scancode, action, mods int) {
+    if action != GLFW_PRESS, return
+    
+    if cast bool (mods & GLFW_MOD_CONTROL) || cast bool (mods & GLFW_MOD_SUPER) {
+        if key == GLFW_KEY_E, exportPseudoCode()
+        if key == GLFW_KEY_S, saveBinary()
+        if key == GLFW_KEY_O, loadBinary()
+        return
+    }
+    
+    if captKeyHeld(GLFW_KEY_SPACE) {
+        region *Region = null
+        lake *Lake = getLakeUnderCursor()
+        platform *Platform = getPlatformUnderCursor()
+        bridge *Bridge = getBridgeUnderCursor()
+        entrance_portal *Portal = getPortalUnderCursor(&entrance)
+        exit_portal *Portal = getPortalUnderCursor(&exit)
+        crawler *Crawler = getGenericUnderCursor(crawlers, 32)
+        swordfish *Swordfish = getGenericUnderCursor(swordfishes, 0)
+        
+        if crawler {
+            if cast bool (mods & GLFW_MOD_SHIFT) {
+                if key == GLFW_KEY_W, crawler.y -= 64; return
+                if key == GLFW_KEY_S, crawler.y += 64; return
+                if key == GLFW_KEY_A, crawler.x -= 64; return
+                if key == GLFW_KEY_D, crawler.x += 64; return
+            } else {
+                if key == GLFW_KEY_A {
+                    if crawler.vx < 0, crawler.speed += 1
+                    else if --crawler.speed == 0, crawler.speed = 1; crawler.vx *= -1
+                    printf('Crawler Speed: %d\n', crawler.speed)
+                    return
+                }
+                if key == GLFW_KEY_D {
+                    if crawler.vx >= 0, crawler.speed += 1
+                    else if --crawler.speed == 0, crawler.speed = 1; crawler.vx *= -1
+                    printf('Crawler Speed: %d\n', crawler.speed)
+                    return
+                }
+            }
+            
+            if key == GLFW_KEY_TAB {
+                crawler.cycleKind(cast bool (mods & GLFW_MOD_SHIFT))
+                return
+            }
+        }
+        
+        if swordfish {
+            if cast bool (mods & GLFW_MOD_SHIFT) {
+                if key == GLFW_KEY_W, swordfish.y -= 64; return
+                if key == GLFW_KEY_S, swordfish.y += 64; return
+                if key == GLFW_KEY_A, swordfish.x -= 64; return
+                if key == GLFW_KEY_D, swordfish.x += 64; return
+            } else {
+                if key == GLFW_KEY_A {
+                    if swordfish.vx < 0, swordfish.speed += 1
+                    else if --swordfish.speed == 0, swordfish.speed = 1; swordfish.vx *= -1
+                    printf('Swordfish Speed: %d\n', swordfish.speed)
+                    return
+                }
+                if key == GLFW_KEY_D {
+                    if swordfish.vx >= 0, swordfish.speed += 1
+                    else if --swordfish.speed == 0, swordfish.speed = 1; swordfish.vx *= -1
+                    printf('Swordfish Speed: %d\n', swordfish.speed)
+                    return
+                }
+                if key == GLFW_KEY_W {
+                    swordfish.interval += 30
+                    printf('Swordfish Interval: %d\n', swordfish.interval)
+                    return
+                }
+                if key == GLFW_KEY_S {
+                    if swordfish.interval >= 30, swordfish.interval -= 30
+                    printf('Swordfish Interval: %d\n', swordfish.interval)
+                    return
+                }
+            }
+        }
+        
+        if lake,            region = lake as *Region
+        if platform,        region = platform as *Region
+        if bridge,          region = bridge as *Region
+        if entrance_portal, region = entrance_portal as *Region
+        if exit_portal,     region = exit_portal as *Region
+        
+        if region {
+            if cast bool (mods & GLFW_MOD_SHIFT) {
+                if region == platform as *Region {
+                    if key == GLFW_KEY_W, platform.adjustPosition(0, -64)
+                    if key == GLFW_KEY_S, platform.adjustPosition(0, 64)
+                    if key == GLFW_KEY_A, platform.adjustPosition(-64, 0)
+                    if key == GLFW_KEY_D, platform.adjustPosition(64, 0)
+                } else {
+                    if key == GLFW_KEY_W, region.adjustPosition(0, -64)
+                    if key == GLFW_KEY_S, region.adjustPosition(0, 64)
+                    if key == GLFW_KEY_A, region.adjustPosition(-64, 0)
+                    if key == GLFW_KEY_D, region.adjustPosition(64, 0)
+                }
+            } else if region != exit_portal as *Region && region != entrance_portal as *Region {
+                if key == GLFW_KEY_W && region != bridge as *Region, region.adjustHeight(-64)
+                if key == GLFW_KEY_S && region != bridge as *Region, region.adjustHeight(64)
+                if key == GLFW_KEY_A, region.adjustWidth(-64)
+                if key == GLFW_KEY_D, region.adjustWidth(64)
+            }
+        }
+        
+        if platform && key == GLFW_KEY_TAB {
+            x, y, w, h, d int = undef
+            x = platform.collision.x
+            y = platform.collision.y
+            w = platform.collision.w
+            h = platform.collision.h
+            d = platform.decor_id
+            
+            each Platform in platforms, if &it == platform,
+                platforms.remove(idx); break
+            
+            if cast bool (mods & GLFW_MOD_SHIFT), createPlatform(x, y, w, h, d == 0 ? DECOR_MAX_ID : d - 1)
+            else createPlatform(x, y, w, h, d == DECOR_MAX_ID ? 0 : d + 1)
+            return
+        }
+        
+        if exit_portal && key == GLFW_KEY_TAB {
+            exit_disabled = !exit_disabled
+            return
+        }
+        
+        return
+    }
+    
+    if key == GLFW_KEY_G, mapmaker_grid = !mapmaker_grid
+    if key == GLFW_KEY_Y, cycleThemes()
+    
+    if key == GLFW_KEY_H {
+        print("--------------------------")
+        print("Help:")
+        print("Y - change theme")
+        print("F - platform")
+        print("Z - lake")
+        print("R - entrance portal")
+        print("X - exit portal")
+        print("B - bridge")
+        print("C - crawler")
+        print("V - swordfish")
+        print("--------------------------")
+    }
+    
+    if key == GLFW_KEY_F, mapmaker_placement = MapMakerPlacement::PLATFORM
+    if key == GLFW_KEY_Z, mapmaker_placement = MapMakerPlacement::LAKE
+    if key == GLFW_KEY_R, mapmaker_placement = MapMakerPlacement::ENTRANCE
+    if key == GLFW_KEY_X, mapmaker_placement = MapMakerPlacement::EXIT
+    if key == GLFW_KEY_B, mapmaker_placement = MapMakerPlacement::BRIDGE
+    if key == GLFW_KEY_C, mapmaker_placement = MapMakerPlacement::CRAWLER
+    if key == GLFW_KEY_V, mapmaker_placement = MapMakerPlacement::SWORDFISH
+}
+
+func on_click(x, y float, button int) {
+    if button == GLFW_MOUSE_BUTTON_3 {
+        if deleteGenericUnderCursor(&crawlers, 32), return
+        if deleteGenericUnderCursor(&swordfishes, 0), return
+        if deletePortalUnderCursor(&exit), return
+        if deletePortalUnderCursor(&entrance), return
+        if deleteRegionUnderCursor(&bridges), return
+        if deleteRegionUnderCursor(&platforms), return
+        if deleteRegionUnderCursor(&lakes), return
+        return
+    }
+    
+    if mapmaker_placement == MapMakerPlacement::LAKE,
+        lakes.add(lake(getSnappedWorldX() as int, getSnappedWorldY() as int, 2560, 512))
+    else if mapmaker_placement == MapMakerPlacement::PLATFORM,
+        createPlatform(getSnappedWorldX() as int, getSnappedWorldY() as int, 256, 256, DECOR_BUSH)
+    else if mapmaker_placement == MapMakerPlacement::BRIDGE,
+        bridges.add(bridge(getSnappedWorldX() as int, getSnappedWorldY() as int, 128))
+    else if mapmaker_placement == MapMakerPlacement::ENTRANCE,
+        entrance.set(portal(getSnappedWorldX() as int, getSnappedWorldY() as int))
+    else if mapmaker_placement == MapMakerPlacement::EXIT,
+        exit.set(portal(getSnappedWorldX() as int, getSnappedWorldY() as int))
+    else if mapmaker_placement == MapMakerPlacement::CRAWLER,
+        crawlers.add(crawler(SPIDER, getSnappedWorldX() as int, getSnappedWorldY() as int + 32, 1, false))
+    else if mapmaker_placement == MapMakerPlacement::SWORDFISH,
+        swordfishes.add(swordfish(SWORDFISH, getSnappedWorldX() as int, getSnappedWorldY() as int, 1, 60, false))
+}
+
+func getSnappedWorldX float {
+    captMouseViewPosition(undef x float, undef y float)
+    return cast float (cast int (x + camera_x) / 64 * 64)
+}
+
+func getSnappedWorldY float {
+    captMouseViewPosition(undef x float, undef y float)
+    return cast float (cast int (y + camera_y) / 64 * 64)
+}
+
+func getUnderCursor(list <$Region> List) *$Region {
+    target_x int = getSnappedWorldX() as int
+    target_y int = getSnappedWorldY() as int
+    each $Region in list,
+        if it.collision.intersectingPoint(target_x, target_y),
+            return &it
+    return null
+}
+
+func getPlatformUnderCursor *Platform = getUnderCursor(platforms)
+func getLakeUnderCursor *Lake = getUnderCursor(lakes)
+func getBridgeUnderCursor *Bridge = getUnderCursor(bridges)
+
+func getPortalUnderCursor(portal *<Portal> Optional) *Portal {
+    target_x int = getSnappedWorldX() as int
+    target_y int = getSnappedWorldY() as int
+    if portal.has && portal.value.visual.intersectingPoint(target_x, target_y),
+        return &portal.value
+    return null
+}
+
+func getGenericUnderCursor(list <$getAABB> List, y_offset int) *$getAABB {
+    target_x int = getSnappedWorldX() as int
+    target_y int = getSnappedWorldY() as int + y_offset
+    each $getAABB in list {
+        aabb AABB = it.getAABB()
+        if aabb.intersectingPoint(target_x, target_y), return &it
+    }
+    return null
+}
+
+func deleteRegionUnderCursor(list *<$Region> List) bool {
+    region *$Region = getUnderCursor(*list)
+    if region, each $Region in *list, if &it == region,
+        list.remove(idx); return true
+    return false
+}
+
+func deletePortalUnderCursor(portal *<Portal> Optional) bool {
+    target_x int = getSnappedWorldX() as int
+    target_y int = getSnappedWorldY() as int
+    if portal.has && portal.value.visual.intersectingPoint(target_x, target_y),
+        portal.rid(); return true
+    return false
+}
+
+func deleteGenericUnderCursor(list *<$getAABB> List, y_offset int) bool {
+    target_x int = getSnappedWorldX() as int
+    target_y int = getSnappedWorldY() as int + y_offset
+    each $getAABB in list {
+        aabb AABB = it.getAABB()
+        if aabb.intersectingPoint(target_x, target_y), list.remove(idx); return true
+    }
+    return false
+}
+
+func cycleKind(this *Crawler, reverse bool) {
+    unless reverse,
+        *this = crawler(this.kind == MAX_CRAWLER ? MIN_CRAWLER : this.kind + 1, this.x, this.y, this.speed, this.vx < 0)
+    else
+        *this = crawler(this.kind == MIN_CRAWLER ? MAX_CRAWLER : this.kind - 1, this.x, this.y, this.speed, this.vx < 0)
+}
+
+func on_step {
+    view_w float = 1920.0f / 960.0f * captFrameWidth() as float * mapmaker_zoom
+    view_h float = 1280.0f / 640.0f * captFrameHeight() as float * mapmaker_zoom
+    captCustomView(view_w, view_h)
+    
+    unless captKeyHeld(GLFW_KEY_SPACE) {
+        camera_movespeed float = captKeyHeld(GLFW_KEY_LEFT_SHIFT) ? 16.0f : 8.0f
+        if captKeyHeld(GLFW_KEY_W), camera_y -= camera_movespeed
+        if captKeyHeld(GLFW_KEY_S), camera_y += camera_movespeed
+        if captKeyHeld(GLFW_KEY_A), camera_x -= camera_movespeed
+        if captKeyHeld(GLFW_KEY_D), camera_x += camera_movespeed
+    }
+    
+    if captKeyHeld(GLFW_KEY_Q), mapmaker_zoom -= 0.005f
+    if captKeyHeld(GLFW_KEY_E), mapmaker_zoom += 0.005f
+    if mapmaker_zoom < 0.01f, mapmaker_zoom = 0.01f
+    
+    inwards_portal.update()
+    outwards_portal.update()
+    disabled_portal.update()
+}
+
+func on_draw {
+    captClearColor(captColor(0.8f, 0.8f, 0.8f))
+
+    // Draw sky
+    sky_shift = camera_x //cast float (glfwGetTime() * 1000.0f - accumulated_pause_time) / 100.0f % captViewWidth()
+    captDrawTexture(theme.sky, ceilf(0.0f - sky_shift), 0.0f - camera_y, 1920.0f, 1280.0f)
+    captDrawTexture(theme.sky, 0.0f - sky_shift + 1920.0f, 0.0f - camera_y, 1920.0f, 1280.0f)
+    
+    // Draw placements
+    each Lake in lakes, drawLakeBehind(it)
+    
+    if exit.has {
+        drawFromCamera(exit_disabled ? disabled_portal.now() : inwards_portal.now(),
+            (&exit as *Region).getVisualX() as float,
+            (&exit as *Region).getVisualY() as float,
+            (&exit as *Region).getVisualWidth() as float,
+            (&exit as *Region).getVisualHeight() as float)
+    }
+    
+    if entrance.has {
+        drawFromCamera(outwards_portal.now(),
+            (&entrance as *Region).getVisualX() as float,
+            (&entrance as *Region).getVisualY() as float,
+            (&entrance as *Region).getVisualWidth() as float,
+            (&entrance as *Region).getVisualHeight() as float)
+    }
+    
+    each Platform in platforms, drawPlatform(it)
+    each Bridge in bridges, drawBridge(it)
+    each Lake in lakes, drawLakeUpFront(it)
+    each Crawler in crawlers, drawCrawler(it)
+    
+    each Swordfish in swordfishes {
+        drawFromCameraEx(it.now(), it.x as float, it.y as float, it.vx as float * 256.0f, 64.0f)
+        
+        // Draw where the swordfish will turn around
+        captDrawOpacity(0.5f)
+        drawFromCameraEx(it.now(), (it.x + it.vx * it.speed * it.interval) as float, it.y as float, it.vx as float * -256.0f, 64.0f)
+        captDrawOpacity(1.0f)
+    }
+    
+    // Draw grid
+    if mapmaker_grid {
+        repeat captViewWidth() as usize / 64 + 1,
+            captDrawTexture(bullet, idx as float * 64.0f - camera_x as float % 64.0f, 0.0f, 4.0f, captViewHeight())
+        repeat captViewHeight() as usize / 64 + 1,
+            captDrawTexture(bullet, 0.0f, idx as float * 64.0f - camera_y as float % 64.0f, captViewWidth(), 4.0f)
+    }
+}
+
+func on_exit {
+    destroyAssets()
+}

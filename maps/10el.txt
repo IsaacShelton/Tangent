@@ -1,0 +1,16 @@
+scene_width = 3840.0f
+setThemeByID(2)
+createPlatform(384, 704, 576, 128, DECOR_MUSHROOMB)
+createPlatform(1216, 640, 256, 256, DECOR_BUSH)
+createPlatform(1728, 704, 576, 128, DECOR_FENCE)
+createPlatform(2496, 640, 256, 256, DECOR_BUSH)
+createPlatform(2944, 576, 704, 256, DECOR_MUSHROOMA)
+lakes.add(lake(0, 768, 3840, 512))
+crawlers.add(crawler(2, 2688, 608, 2, true))
+crawlers.add(crawler(2, 1344, 608, 2, false))
+crawlers.add(crawler(3, 1984, 672, 1, true))
+exit_disabled = false
+player.create(544, 640)
+sceneDefaultShadows()
+entrance.set(portal(512, 576))
+exit.set(portal(3328, 448))

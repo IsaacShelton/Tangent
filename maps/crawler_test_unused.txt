@@ -1,0 +1,16 @@
+scene_width = 2240.0f
+setThemeByID(1)
+createPlatform(256, 704, 1152, 256, DECOR_BUSH)
+createPlatform(1600, 640, 512, 256, DECOR_MUSHROOMB)
+lakes.add(lake(0, 1024, 2240, 256))
+bridges.add(bridge(1408, 704, 192))
+bridges.add(bridge(2112, 640, 128))
+bridges.add(bridge(0, 832, 256))
+crawlers.add(crawler(3, 1024, 672, 2, false))
+crawlers.add(crawler(3, 1216, 672, 2, true))
+crawlers.add(crawler(2, 832, 672, 10, false))
+exit_disabled = false
+player.create(608, 640)
+sceneDefaultShadows()
+entrance.set(portal(576, 576))
+exit.set(portal(1792, 512))
