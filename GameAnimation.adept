@@ -1,19 +1,19 @@
 
 import 'addons.adept'
 
-struct GameAnimation (frames *CaptTexture, length, currentFrame, ticker, interval usize) {
+struct GameAnimation (frames *CaptTexture, length, current_frame, ticker, interval usize) {
     func destroy {
         each CaptTexture in [this.frames, this.length], it.free()
         delete this.frames
     }
     
     func reset {
-        this.currentFrame = 0
+        this.current_frame = 0
         this.ticker = 0
     }
     
     func now CaptTexture
-        = this.frames[this.currentFrame]
+        = this.frames[this.current_frame]
     
     func update {
         if ++this.ticker > this.interval {
@@ -23,20 +23,20 @@ struct GameAnimation (frames *CaptTexture, length, currentFrame, ticker, interva
     }
     
     func advance {
-        if ++this.currentFrame == this.length, this.currentFrame = 0
+        if ++this.current_frame == this.length, this.current_frame = 0
     }
     
     func newInstance GameAnimation {
         anim GameAnimation = *this
-        anim.currentFrame = 0
+        anim.current_frame = 0
         anim.ticker = 0
         return anim
     }
 }
 
-func gameAnimation(pattern String, beginning, end, tickerInterval int) GameAnimation {
+func gameAnimation(pattern String, beginning, end, ticker_interval int) GameAnimation {
     anim GameAnimation
-    anim.interval = tickerInterval
+    anim.interval = ticker_interval
     
     if beginning <= end {
         anim.length = end - beginning + 1
@@ -63,7 +63,7 @@ func gameAnimation(frames *CaptTexture, length usize, interval usize) GameAnimat
     anim GameAnimation = undef
     anim.frames = frames
     anim.length = length
-    anim.currentFrame = 0
+    anim.current_frame = 0
     anim.ticker = 0
     anim.interval = interval
     return anim

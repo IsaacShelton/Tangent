@@ -133,10 +133,18 @@ func decoration(texture CaptTexture, x, y, w, h int) Decoration {
     return decor
 }
 
-func itemSpawn(item Item, x, y, w, h int) ItemSpawn {
+func itemSpawn(item_value usize, x, y int) ItemSpawn {
     spawn ItemSpawn = undef
-    spawn.collision = AABB(x, y, w, h)
-    spawn.visual = AABB(x, y, w, h)
+    spawn.collision = AABB(x, y, 64, 64)
+    spawn.visual = AABB(x, y, 64, 64)
+    *(&spawn.item as *usize) = item_value
+    return spawn
+}
+
+func itemSpawn(item Item, x, y int) ItemSpawn {
+    spawn ItemSpawn = undef
+    spawn.collision = AABB(x, y, 64, 64)
+    spawn.visual = AABB(x, y, 64, 64)
     spawn.item = item
     return spawn
 }
@@ -150,7 +158,7 @@ func portalEnabler(x, y, w, h int) PortalEnabler {
 }
 
 func sign(x, y int, text POD String) Sign {
-    sign Sign = undef
+    sign POD Sign = undef
     sign.collision = AABB(x, y, 64, 64)
     sign.visual = AABB(x, y, 64, 64)
     sign.text = text
@@ -160,7 +168,7 @@ func sign(x, y int, text POD String) Sign {
 
 struct Particle (struct Region, animation GameAnimation){
     func update bool {
-        if this.animation.currentFrame == this.animation.length - 1, return true
+        if this.animation.current_frame == this.animation.length - 1, return true
         this.animation.update()
         return false
     }
@@ -285,26 +293,26 @@ func inRange(this *Sign) bool {
 
 func read(this *Sign) {
     if signboard.has, return
-    signboard.value.create(this.visual.x as float - camera_x, this.visual.y as float - camera_y, 64.0f, 64.0f, this.text)
+    signboard.value.create(this.visual.x as float, this.visual.y as float, this.text)
     signboard.has = true
 }
 
 struct SignBoard (sign_x, sign_y, x, y, w, h float, message String, closing bool) {
-    func create(x, y, w, h float, message String) {
-        this.sign_x = x
-        this.sign_y = y
-        this.x = x
-        this.y = y
-        this.w = w
-        this.h = h
+    func create(world_x, world_y float, message String) {
+        this.sign_x = world_x
+        this.sign_y = world_y
+        this.x = world_x - camera_x
+        this.y = world_y - camera_y
+        this.w = 64.0f
+        this.h = 64.0f
         this.message = message
         this.closing = false
     }
     
     func update {
         if this.closing {
-            this.x = fabs(this.x - this.sign_x) < 2.0f ? this.sign_x : (this.x + this.sign_x) / 2.0f
-            this.y = fabs(this.y - this.sign_y) < 2.0f ? this.sign_y : (this.y + this.sign_y) / 2.0f
+            this.x = fabs(this.sign_x - camera_x - this.x) < 2.0f ? this.sign_x - camera_x : (this.x + this.sign_x - camera_x) / 2.0f
+            this.y = fabs(this.sign_y - camera_y - this.y) < 2.0f ? this.sign_y - camera_y : (this.y + this.sign_y - camera_y) / 2.0f
             this.w = fabs(this.w - 64.0f) < 2.0f ? 64.0f : (this.w + 64.0f) / 2.0f
             this.h = fabs(this.h - 64.0f) < 2.0f ? 64.0f : (this.h + 64.0f) / 2.0f
         } else {
@@ -323,7 +331,7 @@ struct SignBoard (sign_x, sign_y, x, y, w, h float, message String, closing bool
     }
     
     func closed bool {
-        return this.closing && fabs(this.x - this.sign_x) < 2.0f && fabs(this.y - this.sign_y) < 2.0f &&
+        return this.closing && fabs(this.sign_x - camera_x - this.x) < 2.0f && fabs(this.sign_y - camera_y - this.y) < 2.0f &&
             fabs(this.w - 64.0f) < 2.0f && fabs(this.h - 64.0f) < 2.0f
     }
     
@@ -341,30 +349,3 @@ struct SignBoard (sign_x, sign_y, x, y, w, h float, message String, closing bool
         captDrawOpacity(1.0f)
     }
 }
-
-/*
-struct SignBoard (x, y, w, h int, message String) {
-    func create(x, y, w, h int, message String) {
-        this.x = x
-        this.y = y
-        this.w = w
-        this.h = h
-        this.message = message
-    }
-    
-    func update {
-        if this.w > 640, return
-        this.w += 16
-        this.h += 16
-        this.x -= 8
-        this.y -= 8
-    }
-    
-    func draw {
-        captDrawTexture(signboard_texture, this.x as float, this.y as float, this.w as float, this.h as float)
-        text Text = text(this.message, this.h as float / 32.0f)
-        text.draw(this.x as float + this.w as float / 6.0f, this.y as float + this.h as float / 4.0f)
-        text.destroy()
-    }
-}
-*/

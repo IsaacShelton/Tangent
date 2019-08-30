@@ -8,7 +8,22 @@ func toggleInventory {
     
     inventory_selection_x = 0
     inventory_selection_y = 0
-    crafting = false
+    
+    #if no_inventory
+        crafting = true
+    #else
+        crafting = false
+    #end
+}
+
+func canPurchase(index int) bool {
+    return craftable[index] != Item::NONE &&
+        resources[0] >= craftable_prices[index].string &&
+        resources[1] >= craftable_prices[index].slime &&
+        resources[2] >= craftable_prices[index].wood &&
+        resources[3] >= craftable_prices[index].feathers &&
+        resources[4] >= craftable_prices[index].metal &&
+        resources[5] >= craftable_prices[index].crystals
 }
 
 func controlInventory(key int) {
@@ -21,14 +36,14 @@ func controlInventory(key int) {
         index int = getInventorySelectionIndex()
         
         if crafting {
-            if craftable[index] != Item::NONE &&
-                    resources[0] >= craftable_prices[index].string &&
-                    resources[1] >= craftable_prices[index].slime &&
-                    resources[2] >= craftable_prices[index].wood &&
-                    resources[3] >= craftable_prices[index].feathers &&
-                    resources[4] >= craftable_prices[index].metal &&
-                    resources[5] >= craftable_prices[index].crystals {
-                addToInventory(craftable[index])
+            if canPurchase(index) {
+                
+                #if no_inventory
+                    pickupItem(craftable[index], getInventoryItemX(index), getInventoryItemY(index))
+                #else
+                    addToInventory(craftable[index])
+                #end
+                
                 resources[0] -= craftable_prices[index].string
                 resources[1] -= craftable_prices[index].slime
                 resources[2] -= craftable_prices[index].wood
@@ -44,11 +59,13 @@ func controlInventory(key int) {
         }
     }
     
-    if key == controls.b {
-        crafting = !crafting
-        inventory_selection_x = 0
-        inventory_selection_y = 0
-    }
+    #if !no_inventory
+        if key == controls.b {
+            crafting = !crafting
+            inventory_selection_x = 0
+            inventory_selection_y = 0
+        }
+    #end
 }
 
 func clearInventory {

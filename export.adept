@@ -24,6 +24,7 @@ struct BinaryBridge (x, y, w int)
 struct BinaryPortal (has bool, x, y int)
 struct BinaryCrawler (kind, x, y, speed, direction int)
 struct BinarySwordfish (kind, x, y, speed, interval, direction int)
+struct BinaryItemSpawn (item Item, x, y int)
 
 func binary(this *Platform) BinaryPlatform {
     p BinaryPlatform = undef
@@ -81,7 +82,17 @@ func binary(this *Swordfish) BinarySwordfish {
     return s
 }
 
+func binary(this *ItemSpawn) BinaryItemSpawn {
+    i BinaryItemSpawn = undef
+    i.item = this.item
+    i.x = this.collision.x
+    i.y = this.collision.y
+    return i
+}
+
 func exportPseudoCode(filename String) {
+    if filename.first(".txt") < 0, print("Must end in '.txt'"); return
+    
     filename_cstr *ubyte = filename.cstr()
     defer delete filename_cstr
     
@@ -112,10 +123,14 @@ func exportPseudoCode(filename String) {
         fprintf(file, 'swordfishes.add(swordfish(%d, %d, %d, %d, %d, %s))\n', it.kind, it.x, it.y, it.speed, it.interval, it.vx < 0 ? 'true' : 'false')
     
     each Sign in signs {
-        text *ubyte = it.text.cstr()
-        fprintf(file, 'signs.add(sign(%d, %d, "%s"))\n', it.x, it.y, text)
+        newlined String = it.text.replace("\n", "\\n")
+        text *ubyte = newlined.cstr()
+        fprintf(file, 'signs.add(sign(%d, %d, "%s"))\n', it.visual.x, it.visual.y, text)
         delete text
     }
+    
+    each ItemSpawn in item_spawns,
+        fprintf(file, 'item_spawns.add(itemSpawn(%d, %d, %d))\n', it.item as int, it.collision.x, it.collision.y)
     
     fprintf(file, 'exit_disabled = %s\n', exit_disabled ? 'true' : 'false')
     
@@ -150,6 +165,8 @@ func getExportDecorConstant(decor_id int) *ubyte {
 }
 
 func saveBinary(filename String) {
+    if filename.first(".txt") >= 0, print("Cannot contain '.txt'"); return
+    
     filename_cstr *ubyte = filename.cstr()
     defer delete filename_cstr
     
@@ -159,7 +176,7 @@ func saveBinary(filename String) {
     defer fclose(file)
     
     // [0] Binary version (final data group id)
-    binary_version int = 9
+    binary_version int = 11
     fwrite(&binary_version, sizeof int, 1, file)
     
     // [1] Theme ID
@@ -221,9 +238,30 @@ func saveBinary(filename String) {
         s BinarySwordfish = it.binary()
         fwrite(&s, sizeof BinarySwordfish, 1, file)
     }
+    
+    // [10] signs.length
+    if binary_version < 10, return
+    fwrite(&signs.length, sizeof usize, 1, file)
+    
+    each Sign in signs {
+        fwrite(&it.collision.x, sizeof int, 1, file)
+        fwrite(&it.collision.y, sizeof int, 1, file)
+        fwrite(&it.text.length, sizeof usize, 1, file)
+        fwrite(it.text.array, sizeof ubyte, it.text.length, file)
+    }
+    
+    // [11] item_spawns.length
+    fwrite(&item_spawns.length, sizeof usize, 1, file)
+    
+    each ItemSpawn in item_spawns {
+        i BinaryItemSpawn = it.binary()
+        fwrite(&i, sizeof BinaryItemSpawn, 1, file)
+    }
 }
 
 func loadBinary(filename String) {
+    if filename.first(".txt") >= 0, print("Cannot contain '.txt'"); return
+    
     filename_cstr *ubyte = filename.cstr()
     defer delete filename_cstr
     
@@ -240,8 +278,9 @@ func loadBinary(filename String) {
     signs.clear()
     entrance.rid()
     exit.rid()
+    item_spawns.clear()
     
-    lakes_count, platforms_count, bridges_count, crawlers_count, swordfishes_count usize = undef
+    count usize = undef
     
     // [0] Binary version (final data group id)
     binary_version int = undef
@@ -253,27 +292,27 @@ func loadBinary(filename String) {
     setThemeByID(theme_id)
     
     // [2] lakes.length
-    fread(&lakes_count, sizeof usize, 1, file)
+    fread(&count, sizeof usize, 1, file)
     
-    repeat lakes_count {
+    repeat count {
         l BinaryLake = undef
         fread(&l, sizeof BinaryLake, 1, file)
         lakes.add(lake(l.x, l.y, l.w, l.h))
     }
     
     // [3] platforms.length
-    fread(&platforms_count, sizeof usize, 1, file)
+    fread(&count, sizeof usize, 1, file)
     
-    repeat platforms_count {
+    repeat count {
         p BinaryPlatform = undef
         fread(&p, sizeof BinaryPlatform, 1, file)
         createPlatform(p.x, p.y, p.w, p.h, p.decor)
     }
     
     // [4] bridges.length
-    fread(&bridges_count, sizeof usize, 1, file)
+    fread(&count, sizeof usize, 1, file)
     
-    repeat bridges_count {
+    repeat count {
         b BinaryBridge = undef
         fread(&b, sizeof BinaryBridge, 1, file)
         bridges.add(bridge(b.x, b.y, b.w))
@@ -299,9 +338,9 @@ func loadBinary(filename String) {
     
     // [8] crawlers.length
     if binary_version < 8, return
-    fread(&crawlers_count, sizeof usize, 1, file)
+    fread(&count, sizeof usize, 1, file)
     
-    repeat crawlers_count {
+    repeat count {
         c BinaryCrawler = undef
         fread(&c, sizeof BinaryCrawler, 1, file)
         crawlers.add(crawler(c.kind, c.x, c.y, c.speed, c.direction < 0))
@@ -309,11 +348,41 @@ func loadBinary(filename String) {
     
     // [9] swordfishes.length
     if binary_version < 9, return
-    fread(&swordfishes_count, sizeof usize, 1, file)
+    fread(&count, sizeof usize, 1, file)
     
-    repeat swordfishes_count {
+    repeat count {
         s BinarySwordfish = undef
         fread(&s, sizeof BinarySwordfish, 1, file)
         swordfishes.add(swordfish(s.kind, s.x, s.y, s.speed, s.interval, s.direction < 0))
+    }
+    
+    // [10] signs.length
+    if binary_version < 10, return
+    fread(&count, sizeof usize, 1, file)
+    
+    repeat count {
+        x, y int = undef
+        text POD String = undef
+        
+        fread(&x, sizeof int, 1, file)
+        fread(&y, sizeof int, 1, file)
+        fread(&text.length, sizeof usize, 1, file)
+        
+        buffer *ubyte = new ubyte * text.length
+        fread(buffer, sizeof ubyte, text.length, file)
+        
+        text.array = buffer
+        text.capacity = text.length
+        text.ownership = StringOwnership::GIVEN
+        signs.add(sign(x, y, text))
+    }
+    
+    // [11] item_spawns.length
+    fread(&count, sizeof usize, 1, file)
+    
+    repeat count {
+        i BinaryItemSpawn = undef
+        fread(&i, sizeof BinaryItemSpawn, 1, file)
+        item_spawns.add(itemSpawn(i.item, i.x, i.y))
     }
 }

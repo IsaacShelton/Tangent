@@ -10,22 +10,25 @@ func isInWater(aabb AABB) bool {
     return false
 }
 
-func collidingGround(aabb AABB) *Region {
+func collidingGround(aabb AABB) *Region = collidingGround(aabb, aabb.y, false)
+
+func collidingGround(aabb AABB, true_y int, drop_through bool) *Region {
     each Platform in platforms {
         if it.collision.intersecting(aabb), return &it as *Region
     }
-    each Bridge in bridges {
+    unless drop_through, each Bridge in bridges {
+        unless true_y + aabb.h <= it.collision.y, continue
         if it.collision.intersecting(aabb), return &it as *Region
     }
     return null
 }
 
-func playerCollidingPlatform *Region {
-    return collidingGround(player.getAABB())
+func playerCollidingPlatform(true_y int, drop_through bool) *Region {
+    return collidingGround(player.getAABB(), true_y, drop_through)
 }
 
-func playerOnPlatform *Region {
-    return collidingGround(player.getAABB(0, 1))
+func playerOnPlatform(drop_through bool) *Region {
+    return collidingGround(player.getAABB(0, 1), player.y, drop_through)
 }
 
 func updateCrawlers {
@@ -37,12 +40,21 @@ func updateCrawlers {
         it.update()
         
         // Handle landing on ground
-        ground *Region = collidingGround(it.getAABB(0, 1))
+        ground *Region = collidingGround(it.getAABB(0, 1), it.y, false)
         it.vy = (ground != null) ? 0 : (it.vy < 24) ? it.vy + 1 : it.vy
         
         // Advance crawler
-        it.x += it.speed * it.vx
-        collision *Region = collidingGround(it.getAABB())
+        collision *Region = null
+        
+        if it.kind == FROG {
+            unless it.animation.current_frame == 0 || it.animation.current_frame == 4 {
+                it.x += it.speed * it.vx * 2
+                collision = collidingGround(it.getAABB())
+            }
+        } else {
+            it.x += it.speed * it.vx
+            collision = collidingGround(it.getAABB())
+        }
         
         // Turn crawler around if ran into something
         if collision {
@@ -52,7 +64,7 @@ func updateCrawlers {
         
         // Apply gravity to crawler
         it.y += it.vy
-        collision = collidingGround(it.getAABB())
+        collision = collidingGround(it.getAABB(), it.y - it.vy, false)
         
         if collision {
             it.y = (it.vy > 0) ? collision.getY() - 32 : collision.getMaxY()
@@ -109,12 +121,12 @@ func updateCannon {
     c *Cannon = &cannon.value
     
     // Handle landing on ground
-    ground *Region = collidingGround(c.getAABB(0, 1))
+    ground *Region = collidingGround(c.getAABB(0, 1), c.y, false)
     c.vy = (ground != null) ? 0 : (c.vy < 32) ? c.vy + 1 : c.vy
     
     // Apply gravity to cannon
     c.y += c.vy
-    collision *Region = collidingGround(c.getAABB())
+    collision *Region = collidingGround(c.getAABB(), c.y - c.vy, false)
     
     if collision {
         c.y = (c.vy > 0) ? collision.getY() - 72 : collision.getMaxY()

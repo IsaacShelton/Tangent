@@ -1,5 +1,14 @@
 
-enum Item (NONE, STAR, WING, GUN, CANNON, DOUBLEJUMP)
+enum Item (NONE, STAR, WING, GUN, CANNON, DOUBLEJUMP, LAST_ITEM)
+
+func cycle(item *Item, reverse bool) {
+    value usize = *item as usize
+    
+    unless reverse,
+        *(item as *usize) = (++value == Item::LAST_ITEM as usize) ? Item::STAR as usize : value
+    else
+        *(item as *usize) = (--value == Item::NONE as usize) ? Item::LAST_ITEM as usize - 1 : value
+}
 
 func getNameForItem(item Item) String {
     if item == Item::STAR,       return "Blue Star"
@@ -8,6 +17,21 @@ func getNameForItem(item Item) String {
     if item == Item::CANNON,     return "Cannon"
     if item == Item::DOUBLEJUMP, return "Double Jump"
     return ""
+}
+
+func getInfoForItem(index usize) String {
+    info String = getNameForItem(craftable[index]) + "\n\n"
+    price Price = craftable_prices[index]
+    
+    resource_names *String = static String {
+        "string", "slime", "wood", "feathers", "metal", "crystals"
+    }
+    
+    repeat 6 {
+        if price.get(idx) != 0, info = info + "% %\n" % price.get(idx) % resource_names[idx]
+    }
+    
+    return info.commit()
 }
 
 func pickupItem(itemSpawn POD ItemSpawn) {
@@ -42,5 +66,15 @@ struct Price (string, slime, wood, feathers, metal, crystals int) {
         this.feathers = feathers
         this.metal = metal
         this.crystals = crystals
+    }
+    
+    func get(index usize) int {
+        if index == 0, return this.string
+        if index == 1, return this.slime
+        if index == 2, return this.wood
+        if index == 3, return this.feathers
+        if index == 4, return this.metal
+        if index == 5, return this.crystals
+        return 0
     }
 }

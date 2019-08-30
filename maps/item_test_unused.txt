@@ -1,0 +1,13 @@
+scene_width = 2560.0f
+setThemeByID(2)
+createPlatform(256, 640, 960, 256, DECOR_FENCE)
+createPlatform(1344, 384, 640, 960, DECOR_STUMP)
+lakes.add(lake(0, 768, 2560, 512))
+swordfishes.add(swordfish(1, 256, 1088, 2, 360, false))
+item_spawns.add(itemSpawn(2, 704, 576))
+exit_disabled = false
+player.create(416, 576)
+sceneDefaultShadows()
+entrance.set(portal(384, 512))
+exit.set(portal(1728, 256))
+updateCamera()

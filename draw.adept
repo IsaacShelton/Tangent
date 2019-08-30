@@ -136,6 +136,12 @@ func drawSign(s POD Sign) {
     }
 }
 
+func drawItemSpawn(item_spawn POD ItemSpawn) {
+    if item == item_spawn.item, return
+    r *Region = &item_spawn as *Region
+    drawFromCamera(getImageForItem(item_spawn.item), r.getVisualX() as float, r.getVisualY() as float, r.getVisualWidth() as float, r.getVisualHeight() as float)
+}
+
 func drawInventory {
     // Draw main section of inventory
     inventory_x float = getInventoryX()
@@ -158,9 +164,17 @@ func drawInventory {
     repeat 18 {
         if (crafting ? craftable[idx] : inventory[idx]) == Item::NONE, continue
         
+        #if no_inventory
+        unless canPurchase(idx), captDrawOpacity(0.1f)
+        #end
+        
         relx float = getInventoryItemRelX(idx)
         rely float = getInventoryItemRelY(idx)
         captDrawTexture(getImageForItem(crafting ? craftable[idx] : inventory[idx]), inventory_x + relx, inventory_y + rely, 64.0f, 64.0f)
+        
+        #if no_inventory
+        captDrawOpacity(1.0f)
+        #end
     }
     
     repeat 6 {
@@ -190,12 +204,21 @@ func drawInventory {
         }
     }
     
-    captDrawTexture(crafting ? crafting_mode : inventory_mode, inventory_x + 144.0f * 2.0f - 96.0f * 2.0f, inventory_y - 128.0f, 96.0f * 4.0f, 32.0f * 4.0f)
+    #if !no_inventory
+        captDrawTexture(crafting ? crafting_mode : inventory_mode, inventory_x + 144.0f * 2.0f - 96.0f * 2.0f, inventory_y - 128.0f, 96.0f * 4.0f, 32.0f * 4.0f)
+    #end
     
     selected usize = getInventorySelectionIndex()
+    
+    #if no_inventory
+    info Text = text(getInfoForItem(selected), 22.0)
+    info.draw(inventory_x + 224.0f * 3.0f - 16.0f, inventory_y + 32.0f)
+    info.destroy()
+    #else
     test Text = text(getNameForItem(crafting ? craftable[selected] : inventory[selected]), 22.0)
     test.draw(inventory_x + 224.0f * 3.0f - 16.0f, inventory_y + 32.0f)
     test.destroy()
+    #end
 }
 
 func getImageForPlayer(player POD Player) GameImageEx {

@@ -60,7 +60,7 @@ func text(content String, scale double) Text {
 func fontIndexFor(character ubyte) usize {
     if character >= 'A'ub && character <= 'Z'ub, return cast usize (character - 'A'ub)
     if character >= 'a'ub && character <= 'z'ub, return cast usize (character - 'a'ub)
-    if character >= '0'ub && character <= '9'ub, return cast usize (character - '0'ub)
+    if character >= '0'ub && character <= '9'ub, return cast usize (character - '0'ub + 32)
     
     special String = ".,!?-+"
     each ubyte in [special.array, special.length], if it == character,

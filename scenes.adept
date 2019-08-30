@@ -12,6 +12,8 @@ func gotoScene(newScene int) {
     if newScene == 10, gotoScene10(); return
     if newScene == 11, gotoScene11(); return
     if newScene == 12, gotoScene12(); return
+    if newScene == 13, gotoScene13(); return
+    if newScene == 14, gotoScene14(); return
     gotoWinScreen()
 }
 
@@ -29,6 +31,7 @@ func scenePresets {
     item_spawns.clear()
     signs.clear()
     entrance.rid()
+    exit.rid()
     exit_disabled = false
     portal_enabler.rid()
     particles.clear()
@@ -135,7 +138,7 @@ func gotoScene3 {
     swordfishes.add(swordfish(SWORDFISH, 4160, 1024, 4, 90, false))
     swordfishes.add(swordfish(SWORDFISH, 4160 - 64 + 90 * 4, 1088, 4, 90, true))
     swordfishes.add(swordfish(SWORDFISH, 4160 + 64, 1184, 4, 90, false))
-    item_spawns.add(itemSpawn(Item::WING, 1024 + 256, 480 - 64, 64, 64))
+    item_spawns.add(itemSpawn(Item::WING, 1024 + 256, 480 - 64))
     entrance.set(portal(player.x - 32, player.y - 64))
     exit.set(portal(4864, 1280 - 128))
     signs.add(sign(1024 + 64, 480 - 64, "With the wing powerup,\n\nYou can sprint by holding j\nand super jump by pressing k.\n\nYou can sprint in midair.\nYou can still parachute too."))
@@ -162,7 +165,7 @@ func gotoScene4 {
     crawlers.add(crawler(BEETLE, 3584, 512 - 32, 2))
     crawlers.add(crawler(BEETLE, 4352, 384 - 32, 2))
     crawlers.add(crawler(BEETLE, 4352 + 256, 384 - 32, 2))
-    item_spawns.add(itemSpawn(Item::WING, 1088 + 96, 480 - 64, 64, 64))
+    item_spawns.add(itemSpawn(Item::WING, 1088 + 96, 480 - 64))
     entrance.set(portal(player.x - 32, player.y - 64))
     exit.set(portal(4736, 256))
 }
@@ -180,7 +183,7 @@ func gotoScene5 {
     lakes.add(lake(0, 768, 2560, 512))
     bridges.add(bridge(256 + 64, 704, 192))
     swordfishes.add(swordfish(SWORDFISH, 1792, 1024, 4, 90, false))
-    item_spawns.add(itemSpawn(Item::STAR, 192 + 32, 704 - 64, 64, 64))
+    item_spawns.add(itemSpawn(Item::STAR, 192 + 32, 704 - 64))
     entrance.set(portal(player.x - 32, player.y - 64))
     exit.set(portal(1024 + 320, 384 + 32 - 128))
     exit_disabled = true
@@ -215,7 +218,7 @@ func gotoScene6 {
     crawlers.add(crawler(SPIDER, 2976 + 512, 352 - 32, 1))
     crawlers.add(crawler(SPIDER, 2976 + 640, 352 - 32, 1, true))
     crawlers.add(crawler(SPIDER, 2976 + 768, 352 - 32, 1))
-    item_spawns.add(itemSpawn(Item::GUN, 1088 + 96, 480 - 64, 64, 64))
+    item_spawns.add(itemSpawn(Item::GUN, 1088 + 96, 480 - 64))
     entrance.set(portal(player.x - 32, player.y - 64))
     exit.set(portal(4736, 256))
 }
@@ -250,7 +253,7 @@ func gotoScene7 {
     crawlers.add(crawler(BEETLE, 3456 + 512, 512 - 32, 2, true))
     crawlers.add(crawler(SPIDER, 3456 + 128, 512 - 32, 1))
     crawlers.add(crawler(BEETLE, 3456 + 384, 512 - 32, 2, true))
-    item_spawns.add(itemSpawn(Item::CANNON, 1088 + 96, 480 - 64, 64, 64))
+    item_spawns.add(itemSpawn(Item::CANNON, 1088 + 96, 480 - 64))
     entrance.set(portal(player.x - 32, player.y - 64))
     exit.set(portal(4736, 256))
 }
@@ -325,9 +328,6 @@ func gotoScene10 {
     createPlatform(2496, 640, 256, 256, DECOR_BUSH)
     createPlatform(2944, 576, 704, 256, DECOR_MUSHROOMA)
     lakes.add(lake(0, 768, 3840, 512))
-    crawlers.add(crawler(2, 2688, 608, 2, true))
-    crawlers.add(crawler(2, 1344, 608, 2, false))
-    crawlers.add(crawler(3, 1984, 672, 1, true))
     exit_disabled = false
     player.create(544, 640)
     sceneDefaultShadows()
@@ -359,18 +359,18 @@ func gotoScene12 {
     createPlatform(1152, 384, 512, 192, DECOR_MUSHROOMB)
     createPlatform(64, 576, 704, 320, DECOR_FENCE)
     createPlatform(2048, 640, 640, 192, DECOR_BUSH)
-    createPlatform(2816, 256, 256, 1152, DECOR_NONE)
+    createPlatform(2816, 320, 256, 1024, DECOR_NONE)
     createPlatform(3456, 640, 512, 256, DECOR_BUSH)
-    createPlatform(4224, 256, 256, 896, DECOR_BUSH)
-    createPlatform(4736, 256, 768, 192, DECOR_FENCE)
-    createPlatform(6272, 256, 512, 192, DECOR_NONE)
+    createPlatform(4224, 320, 256, 832, DECOR_BUSH)
+    createPlatform(4736, 320, 768, 192, DECOR_FENCE)
+    createPlatform(6272, 320, 512, 192, DECOR_NONE)
     lakes.add(lake(0, 768, 6912, 512))
     bridges.add(bridge(1024, 512, 128))
     bridges.add(bridge(768, 704, 128))
     bridges.add(bridge(1920, 704, 128))
     bridges.add(bridge(1664, 512, 128))
     bridges.add(bridge(3328, 704, 128))
-    bridges.add(bridge(4480, 256, 256))
+    bridges.add(bridge(4480, 320, 256))
     crawlers.add(crawler(3, 128, 544, 1, false))
     crawlers.add(crawler(3, 192, 544, 1, true))
     crawlers.add(crawler(3, 256, 544, 1, false))
@@ -384,16 +384,90 @@ func gotoScene12 {
     crawlers.add(crawler(3, 64, 544, 1, true))
     swordfishes.add(swordfish(1, 1024, 1024, 2, 240, false))
     swordfishes.add(swordfish(1, 3136, 960, 2, 390, false))
+    signs.add(sign(2304, 576, "Hint\n\nCraft a double jump powerup"))
+    signs.add(sign(2432, 576, "Hint\n\nE - Open Inventory\n\nK - Switch between inventory\nmode and crafting mode"))
+    signs.add(sign(2560, 576, "Hint\n\nEquip the powerup"))
+    signs.add(sign(4800, 256, "Hint\n\nParachuting can be mixed with\ndouble jumping to travel\ngreater distances."))
     exit_disabled = false
     player.create(1376, 320)
     sceneDefaultShadows()
     entrance.set(portal(1344, 256))
-    exit.set(portal(6464, 128))
+    exit.set(portal(6464, 192))
     updateCamera()
-    signs.add(sign(2048 + 192 + 64, 640 - 64, "HINT\n\nCraft a double jump powerup"))
-    signs.add(sign(2048 + 192 + 128 + 64, 640 - 64, "HINT\n\nE - Open inventory\n\nK - Switch between inventory\nmode and crafting mode"))
-    signs.add(sign(2048 + 192 + 256 + 64, 640 - 64, "HINT\n\nEquip the powerup"))
-    signs.add(sign(4736 + 64, 256 - 64, "HINT\n\nParachuting can be mixed with\ndouble jumping to travel\ngreater distances."))
+}
+
+func gotoScene13 {
+    scenePresets()
+    scene = 13
+    scene_width = 4288.0f
+    setThemeByID(2)
+    createPlatform(192, 320, 512, 576, DECOR_MUSHROOMA)
+    createPlatform(1344, 512, 768, 192, DECOR_FENCE)
+    createPlatform(896, 448, 128, 128, DECOR_MUSHROOMB)
+    createPlatform(2432, 448, 896, 448, DECOR_MUSHROOMB)
+    createPlatform(2560, 256, 576, 128, DECOR_NONE)
+    createPlatform(3712, 448, 256, 128, DECOR_NONE)
+    lakes.add(lake(-512, 768, 4800, 512))
+    bridges.add(bridge(768, 448, 128))
+    bridges.add(bridge(704, 640, 64))
+    crawlers.add(crawler(4, 1472, 480, 2, false))
+    crawlers.add(crawler(4, 1664, 480, 2, false))
+    crawlers.add(crawler(4, 1792, 480, 2, false))
+    crawlers.add(crawler(4, 1344, 480, 2, false))
+    crawlers.add(crawler(4, 1920, 480, 2, false))
+    crawlers.add(crawler(4, 2496, 416, 2, false))
+    crawlers.add(crawler(4, 2816, 416, 2, false))
+    crawlers.add(crawler(4, 3136, 416, 2, false))
+    crawlers.add(crawler(4, 3008, 416, 2, false))
+    crawlers.add(crawler(4, 2624, 416, 2, false))
+    crawlers.add(crawler(3, 2624, 224, 2, false))
+    crawlers.add(crawler(3, 2880, 224, 3, true))
+    crawlers.add(crawler(3, 3008, 224, 2, true))
+    swordfishes.add(swordfish(1, 384, 1088, 2, 480, false))
+    exit_disabled = false
+    player.create(416, 256)
+    sceneDefaultShadows()
+    entrance.set(portal(384, 192))
+    exit.set(portal(3776, 320))
+    updateCamera()
+}
+
+func gotoScene14 {
+    scenePresets()
+    scene = 14
+    scene_width = 6336.0f
+    setThemeByID(2)
+    createPlatform(256, 384, 448, 960 - 192, DECOR_BUSH)
+    createPlatform(1216, 512, 192, 320, DECOR_NONE)
+    createPlatform(1536, -64, 192, 512, DECOR_NONE)
+    createPlatform(1728, 576, 640, 256, DECOR_BUSH)
+    createPlatform(2496, 256, 256, 576, DECOR_MUSHROOMA)
+    createPlatform(2944, 576, 832, 256, DECOR_NONE)
+    createPlatform(2880, -64, 192, 512, DECOR_NONE)
+    createPlatform(4800, 448, 256, 384, DECOR_BUSH)
+    createPlatform(4160, 320, 256, 192, DECOR_MUSHROOMB)
+    createPlatform(5312, 576, 832, 256, DECOR_MUSHROOMA)
+    createPlatform(5248 - 64, -64, 128, 512, DECOR_NONE)
+    bridges.add(bridge(1216 - 64, 512 + 192, 64))
+    lakes.add(lake(0, 768, 6336, 512))
+    crawlers.add(crawler(4, 2112, 544, 2, false))
+    crawlers.add(crawler(4, 1856, 544, 2, false))
+    crawlers.add(crawler(4, 3328, 544, 2, true))
+    crawlers.add(crawler(4, 3648, 544, 2, false))
+    crawlers.add(crawler(4, 3072, 544, 2, true))
+    crawlers.add(crawler(4, 4224, 288, 2, false))
+    crawlers.add(crawler(4, 5568 + 192, 544, 2, false))
+    swordfishes.add(swordfish(1, 768, 1088, 4, 120, false))
+    swordfishes.add(swordfish(1, 1664, 1088, 7, 240, false))
+    swordfishes.add(swordfish(1, 4032, 1088, 6, 150, false))
+    swordfishes.add(swordfish(1, 5440, 1088, 6, 90, false))
+    item_spawns.add(itemSpawn(5, 1280, 448))
+    exit_disabled = false
+    player.create(544, 320)
+    sceneDefaultShadows()
+    entrance.set(portal(512, 256))
+    exit.set(portal(5888, 448))
+    updateCamera()
 }
 
 func gotoThemeTestScreen {
@@ -415,6 +489,7 @@ func gotoWinScreen {
     scenePresets()
     scene = 2002
     scene_width = 2560.0f
+    setThemeByID(2)
     player.create(640 - 64, 544 - 64)
     sceneDefaultShadows()
     createPlatform(128, 544, 896, 384, DECOR_BUSH)
@@ -424,9 +499,11 @@ func gotoWinScreen {
     bridges.add(bridge(1408, 448, 128))
     bridges.add(bridge(1920 + 256, 480 + 32, 256))
     bridges.add(bridge(1920 - 128, 640, 128))
-    item_spawns.add(itemSpawn(Item::WING, player.x, player.y - 128, 64, 64))
-    item_spawns.add(itemSpawn(Item::GUN, 384, 544 - 64, 64, 64))
-    item_spawns.add(itemSpawn(Item::CANNON, 768, 544 - 64, 64, 64))
+    item_spawns.add(itemSpawn(Item::WING, player.x, player.y - 128))
+    item_spawns.add(itemSpawn(Item::GUN, 384, 544 - 64))
+    item_spawns.add(itemSpawn(Item::CANNON, 768, 544 - 64))
+    item_spawns.add(itemSpawn(Item::DOUBLEJUMP, 384, 128))
+    item_spawns.add(itemSpawn(Item::STAR, 768, 128))
     entrance.set(portal(player.x - 32, player.y - 64))
     exit.rid()
 }
@@ -446,22 +523,3 @@ func teleport {
     teleporting = true
     teleport_opacity = 1.0f
 }
-
-func killPlayer {
-    is_dead = true
-    respawn_timer = 135
-    death_x = player.x as float
-    death_y = player.y as float
-    death_vx = 0.0f
-    death_vy = -30.0f
-    
-    if item == Item::GUN {
-        // Technically height should be 88, but it looks better as 96
-        death_image = gameImageEx(gun_death, 0, -24, 64, 96)
-    } else if item == Item::CANNON {
-        death_image = gameImageEx(cannoneer_death, 0, -24, 64, 88)
-    } else {
-        death_image = gameImageEx(death, 0, 0, 64, 64)
-    }
-}
-

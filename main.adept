@@ -2,6 +2,7 @@
 #set show_fps false
 #set fullscreen true
 #set cheats true
+#set no_inventory true
 
 pragma compiler_supports '2.2'
 pragma no_type_info
@@ -54,7 +55,7 @@ func main {
     #if fullscreen
         captStart('Tangent', true)
     #else
-        captStart('Tangent', 640, 480, false)
+        captStart('Tangent', 1920 / 2, 1080 / 2, false)
     #end
 }
 
@@ -76,6 +77,27 @@ func on_exit {
 }
 
 func on_step {
+    // Removed closed signboards
+    if signboard.has && signboard.value.closed(), signboard.rid()
+    
+    // Animate signboards
+    if signboard.has, signboard.value.update()
+    
+    // Animate collected resources
+    each CollectedResource in collected_resources {
+        target_screen_x float = 1792.0f + 14.0f
+        target_screen_y float = 32.0f + 14.0f
+        
+        it.x = (it.x < target_screen_x - 4.0f) ? it.x + (target_screen_x - it.x) / 4.0f : target_screen_x
+        it.y = (it.y > target_screen_y + 4.0f) ? it.y + (target_screen_y - it.y) / 4.0f : target_screen_y
+        
+        if it.x == target_screen_x && it.y == target_screen_y {
+            collected_resources.remove(idx--)
+            continue
+        }
+    }
+    
+    // Handle player when dead
     if is_dead {
         // Respawn if death animation is over
         if death_y > 1280.0f || --respawn_timer == 0 {
@@ -269,8 +291,11 @@ func on_step {
         player.moving_horizontally = true
         
         // Prevent walking into something
-        collision *Region = playerCollidingPlatform()
+        collision *Region = playerCollidingPlatform(player.y, false)
         if collision, player.x = collision.getX() - 64
+        
+        // Close signboard if reading
+        if signboard.has, signboard.value.close()
     }
     
     if captKeyHeld(controls.left) {
@@ -281,33 +306,45 @@ func on_step {
         player.moving_horizontally = true
         
         // Prevent walking into something
-        collision *Region = playerCollidingPlatform()
+        collision *Region = playerCollidingPlatform(player.y, false)
         if collision, player.x = collision.getMaxX()
+        
+        // Close signboard if reading
+        if signboard.has, signboard.value.close()
     }
     
-    currently_on_ground *Region = playerOnPlatform()
+    drop_through bool = captKeyHeld(controls.down)
+    currently_on_ground *Region = playerOnPlatform(drop_through)
     
     if player.swimming {
         // Swimming Mode
         
         if captKeyHeld(controls.up) || captKeyHeld(controls.alt_up) {
             // Swim upwards
+            previous_y int = player.y
             player.y -= (item == Item::WING && captKeyHeld(controls.a)) ? 6 : 4
             player.moving = true
             
             // Prevent swimming upwards into something
-            collision *Region = playerCollidingPlatform()
+            collision *Region = playerCollidingPlatform(previous_y, false)
             if collision, player.y = collision.getMaxY()
+            
+            // Close signboard if reading
+            if signboard.has, signboard.value.close()
         }
         
         if captKeyHeld(controls.down) {
             // Swim downwards
+            previous_y int = player.y
             player.y += (item == Item::WING && captKeyHeld(controls.a)) ? 6 : 4
             player.moving = true
             
             // Prevent swimming downwards into something
-            collision *Region = playerCollidingPlatform()
+            collision *Region = playerCollidingPlatform(previous_y, drop_through)
             if collision, player.y = collision.getY() - 64
+            
+            // Close signboard if reading
+            if signboard.has, signboard.value.close()
         }
         
         // Sink player in water
@@ -324,9 +361,15 @@ func on_step {
             player.vy = -24
             player.vx += player.moving_horizontally ? 1 : 0
             particles.add(particle(smoke, player.x, player.y, 64, 64))
-        } else if captKeyHeld(controls.up) {
+                
+            // Close signboard if reading
+            if signboard.has, signboard.value.close()
+        } else if captKeyHeld(controls.up) || captKeyHeld(controls.alt_up) {
             // Standard Jump
             player.vy = -20
+            
+            // Close signboard if reading
+            if signboard.has, signboard.value.close()
         } else {
             // Stand on Ground
             player.vy = 0
@@ -334,17 +377,17 @@ func on_step {
     }
     
     // Parachute if falling in air and UP is held
-    player.parachuting = currently_on_ground == null && player.vy > 0 && captKeyHeld(controls.up)
+    player.parachuting = currently_on_ground == null && player.vy > 0 && (captKeyHeld(controls.up) || captKeyHeld(controls.alt_up))
     if player.parachuting && player.vy > 4, player.vy = 4
     
     // Apply horizontal force on player
     player.x += player.vx
-    collision *Region = playerCollidingPlatform()
+    collision *Region = playerCollidingPlatform(player.y, false)
     if collision, player.x = (player.vx > 0) ? collision.getX() - 64 : collision.getMaxX()
     
     // Apply vertical force on player
     player.y += player.vy
-    collision = playerCollidingPlatform()
+    collision = playerCollidingPlatform(player.y - player.vy, drop_through)
     if collision, player.y = (player.vy > 0) ? collision.getY() - 64 : collision.getMaxY()
     
     // Apply friction
@@ -419,26 +462,6 @@ func on_step {
         it.press_h_opacity = fabs(it.press_h_opacity - target_opacity) > 0.0001f ? it.press_h_opacity + (target_opacity - it.press_h_opacity) / 6.0f : target_opacity
     }
     
-    // Removed closed signboards
-    if signboard.has && signboard.value.closed(), signboard.rid()
-    
-    // Animate signboards
-    if signboard.has, signboard.value.update()
-    
-    // Animate collected resources
-    each CollectedResource in collected_resources {
-        target_screen_x float = 1792.0f + 14.0f
-        target_screen_y float = 32.0f + 14.0f
-        
-        it.x = (it.x < target_screen_x - 4.0f) ? it.x + (target_screen_x - it.x) / 4.0f : target_screen_x
-        it.y = (it.y > target_screen_y + 4.0f) ? it.y + (target_screen_y - it.y) / 4.0f : target_screen_y
-        
-        if it.x == target_screen_x && it.y == target_screen_y {
-            collected_resources.remove(idx--)
-            continue
-        }
-    }
-    
     // Scene events
     if scene == 11 && crawlers.length == 0 && !slime_boss.has && exit_disabled && !portal_enabler.has,
         portal_enabler.set(portalEnabler(928, 480, 64, 64))
@@ -464,11 +487,14 @@ func on_key(key int, scancode int, action int, mods int) {
     // Start game if on title screen
     if scene == 0, gotoScene1()
 
+    // If reading sign, close the signboard
+    if signboard.has, signboard.value.close()
+
     if key == GLFW_KEY_T, gotoThemeTestScreen(); return
     if key == GLFW_KEY_Y, cycleThemes(); return
     
     // Toggle inventory
-    if key == GLFW_KEY_E, toggleInventory()
+    if key == GLFW_KEY_E && !signboard.has, toggleInventory()
     
     // Debug position
     if key == GLFW_KEY_P, print("rx: %, ry: %, x32: %, y32: %" % player.x % player.y % (player.x - player.x % 32) % (player.y - player.y % 32))
@@ -490,6 +516,8 @@ func on_key(key int, scancode int, action int, mods int) {
         if signboard.has, signboard.value.close()
         else each Sign in signs, if it.inRange(), it.read(); break
     }
+    
+    drop_through bool = captKeyHeld(controls.down)
     
     if item == Item::STAR {
         // Teleport to save-state
@@ -528,8 +556,12 @@ func on_key(key int, scancode int, action int, mods int) {
                 cannon.set(newCannon)
             }
         }
-    } else if item == Item::DOUBLEJUMP && key == controls.up {
-        unless playerIsInWater() || double_jumped, player.vy = -20; double_jumped = true
+    } else if item == Item::DOUBLEJUMP && (key == controls.up || key == controls.alt_up) {
+        unless playerIsInWater() || double_jumped  || playerOnPlatform(drop_through) != null {
+            particles.add(particle(slimesmoke, player.x, player.y, 64, 64))
+            player.vy = -20
+            double_jumped = true
+        }
     }
     
     #if cheats
@@ -602,12 +634,7 @@ func on_draw {
         drawFromCamera(enabler.now(), r.getVisualX() as float, r.getVisualY() as float, r.getVisualWidth() as float, r.getVisualHeight() as float)
     }
     
-    each ItemSpawn in item_spawns {
-        if item == it.item, continue
-        
-        r *Region = &it as *Region
-        drawFromCamera(getImageForItem(it.item), r.getVisualX() as float, r.getVisualY() as float, r.getVisualWidth() as float, r.getVisualHeight() as float)
-    }
+    each ItemSpawn in item_spawns, drawItemSpawn(it)
     
     if slime_boss.has, slime_boss.value.draw()
     
@@ -628,7 +655,7 @@ func on_draw {
     }
     
     if scene == 2002,
-        drawFromCamera(win, 576.0f - 224.0f, 192.0f, 512.0f, 128.0f)
+        drawFromCamera(win, 576.0f - 224.0f, 192.0f + 32.0f, 512.0f, 128.0f)
     
     // Draw collected resources
     each CollectedResource in collected_resources {

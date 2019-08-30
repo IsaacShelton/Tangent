@@ -3,7 +3,8 @@ MIN_CRAWLER == SPIDER
 SPIDER == 1
 BEETLE == 2
 SLIME  == 3
-MAX_CRAWLER == SLIME
+FROG == 4
+MAX_CRAWLER == FROG
 
 struct Crawler (kind, x, y, vx, vy, speed int, animation GameAnimation, potential_drop Resource) {
     func update {
@@ -51,6 +52,9 @@ func crawler(kind, x, y, speed int, reverse bool) Crawler {
     } else if kind == SLIME {
         crawler.animation = slime_animation.newInstance()
         crawler.potential_drop = Resource::SLIME
+    } else if kind == FROG {
+        crawler.animation = frog_animation.newInstance()
+        crawler.potential_drop = Resource::NONE
     } else {
         crawler.animation = spider_animation.newInstance()
         crawler.potential_drop = Resource::NONE

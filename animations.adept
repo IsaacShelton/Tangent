@@ -18,6 +18,8 @@ smoke GameAnimation
 flame GameAnimation
 enabler GameAnimation
 coin GameAnimation
+slimesmoke GameAnimation
+frog_animation GameAnimation
 
 func loadAnimations(assetsFolder String) {
     wave = gameAnimation(assetsFolder + "wave%.png", 0, 3, 10)
@@ -39,6 +41,8 @@ func loadAnimations(assetsFolder String) {
     flame = gameAnimation(assetsFolder + "flame%.png", 0, 1, 1)
     enabler = gameAnimation(assetsFolder + "enabler%.png", 0, 1, 20)
     coin = gameAnimation(assetsFolder + "coin%.png", 0, 7, 5)
+    slimesmoke = gameAnimation(assetsFolder + "slimesmoke%.png", 0, 3, 1)
+    frog_animation = gameAnimation(assetsFolder + "frog%.png", 0, 4, 15)
 }
 
 func destroyAnimations {
@@ -60,4 +64,6 @@ func destroyAnimations {
     flame.destroy()
     enabler.destroy()
     coin.destroy()
+    slimesmoke.destroy()
+    frog_animation.destroy()
 }

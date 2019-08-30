@@ -30,7 +30,7 @@ import '2.2/basics.adept'
 import '2.2/List.adept'
 import 'captain_prototype/captain.adept'
 
-enum MapMakerPlacement (PLATFORM, LAKE, ENTRANCE, EXIT, BRIDGE, CRAWLER, SWORDFISH)
+enum MapMakerPlacement (PLATFORM, LAKE, ENTRANCE, EXIT, BRIDGE, CRAWLER, SWORDFISH, SIGN, ITEMSPAWN)
 
 mapmaker_zoom float
 mapmaker_grid bool
@@ -82,6 +82,8 @@ func on_key(key, scancode, action, mods int) {
         exit_portal *Portal = getPortalUnderCursor(&exit)
         crawler *Crawler = getGenericUnderCursor(crawlers, 32)
         swordfish *Swordfish = getGenericUnderCursor(swordfishes, 0)
+        sign *Sign = getSignUnderCursor()
+        item_spawn *ItemSpawn = getItemSpawnUnderCursor()
         
         if crawler {
             if cast bool (mods & GLFW_MOD_SHIFT) {
@@ -147,6 +149,8 @@ func on_key(key, scancode, action, mods int) {
         if bridge,          region = bridge as *Region
         if entrance_portal, region = entrance_portal as *Region
         if exit_portal,     region = exit_portal as *Region
+        if sign,            region = sign as *Region
+        if item_spawn,      region = item_spawn as *Region
         
         if region {
             if cast bool (mods & GLFW_MOD_SHIFT) {
@@ -161,7 +165,10 @@ func on_key(key, scancode, action, mods int) {
                     if key == GLFW_KEY_A, region.adjustPosition(-64, 0)
                     if key == GLFW_KEY_D, region.adjustPosition(64, 0)
                 }
-            } else if region != exit_portal as *Region && region != entrance_portal as *Region {
+            } else if region == sign as *Region {
+                // Instead of resizing sign, print its text
+                print("Sign Content: \"%\"" % sign.text)
+            } else if region != exit_portal as *Region && region != entrance_portal as *Region && region != item_spawn as *Region {
                 if key == GLFW_KEY_W && region != bridge as *Region, region.adjustHeight(-64)
                 if key == GLFW_KEY_S && region != bridge as *Region, region.adjustHeight(64)
                 if key == GLFW_KEY_A, region.adjustWidth(-64)
@@ -190,6 +197,11 @@ func on_key(key, scancode, action, mods int) {
             return
         }
         
+        if item_spawn && key == GLFW_KEY_TAB {
+            cycle(&item_spawn.item, cast bool (mods & GLFW_MOD_SHIFT))
+            return
+        }
+        
         return
     }
     
@@ -207,6 +219,8 @@ func on_key(key, scancode, action, mods int) {
         print("B - bridge")
         print("C - crawler")
         print("V - swordfish")
+        print("N - sign")
+        print("M - item spawn")
         print("--------------------------")
     }
     
@@ -217,14 +231,19 @@ func on_key(key, scancode, action, mods int) {
     if key == GLFW_KEY_B, mapmaker_placement = MapMakerPlacement::BRIDGE
     if key == GLFW_KEY_C, mapmaker_placement = MapMakerPlacement::CRAWLER
     if key == GLFW_KEY_V, mapmaker_placement = MapMakerPlacement::SWORDFISH
+    if key == GLFW_KEY_N, mapmaker_placement = MapMakerPlacement::SIGN
+    if key == GLFW_KEY_M, mapmaker_placement = MapMakerPlacement::ITEMSPAWN
 }
 
 func on_click(x, y float, button int) {
     if button == GLFW_MOUSE_BUTTON_3 {
         if deleteGenericUnderCursor(&crawlers, 32), return
         if deleteGenericUnderCursor(&swordfishes, 0), return
+        if deleteRegionUnderCursor(&item_spawns), return
+        if deleteRegionUnderCursor(&signs), return
         if deletePortalUnderCursor(&exit), return
         if deletePortalUnderCursor(&entrance), return
+        if deleteRegionUnderCursor(&signs), return
         if deleteRegionUnderCursor(&bridges), return
         if deleteRegionUnderCursor(&platforms), return
         if deleteRegionUnderCursor(&lakes), return
@@ -245,6 +264,13 @@ func on_click(x, y float, button int) {
         crawlers.add(crawler(SPIDER, getSnappedWorldX() as int, getSnappedWorldY() as int + 32, 1, false))
     else if mapmaker_placement == MapMakerPlacement::SWORDFISH,
         swordfishes.add(swordfish(SWORDFISH, getSnappedWorldX() as int, getSnappedWorldY() as int, 1, 60, false))
+    else if mapmaker_placement == MapMakerPlacement::SIGN {
+        text String = scan("Enter text (use ~ for newlines): ")
+        text = text.replace("~", "\n")
+        signs.add(sign(getSnappedWorldX() as int, getSnappedWorldY() as int, text.commit()))
+    }
+    else if mapmaker_placement == MapMakerPlacement::ITEMSPAWN,
+        item_spawns.add(itemSpawn(Item::STAR, getSnappedWorldX() as int, getSnappedWorldY() as int))
 }
 
 func getSnappedWorldX float {
@@ -269,6 +295,8 @@ func getUnderCursor(list <$Region> List) *$Region {
 func getPlatformUnderCursor *Platform = getUnderCursor(platforms)
 func getLakeUnderCursor *Lake = getUnderCursor(lakes)
 func getBridgeUnderCursor *Bridge = getUnderCursor(bridges)
+func getSignUnderCursor *Sign = getUnderCursor(signs)
+func getItemSpawnUnderCursor *ItemSpawn = getUnderCursor(item_spawns)
 
 func getPortalUnderCursor(portal *<Portal> Optional) *Portal {
     target_x int = getSnappedWorldX() as int
@@ -372,7 +400,9 @@ func on_draw {
     each Platform in platforms, drawPlatform(it)
     each Bridge in bridges, drawBridge(it)
     each Lake in lakes, drawLakeUpFront(it)
+    each Sign in signs, drawSign(it)
     each Crawler in crawlers, drawCrawler(it)
+    each ItemSpawn in item_spawns, drawItemSpawn(it)
     
     each Swordfish in swordfishes {
         drawFromCameraEx(it.now(), it.x as float, it.y as float, it.vx as float * 256.0f, 64.0f)

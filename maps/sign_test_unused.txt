@@ -1,0 +1,11 @@
+scene_width = 2560.0f
+setThemeByID(2)
+createPlatform(384, 640, 1024, 256, DECOR_MUSHROOMB)
+lakes.add(lake(0, 768, 2560, 512))
+signs.add(sign(832, 576, "Welcome\nThis is a Test"))
+exit_disabled = false
+player.create(544, 576)
+sceneDefaultShadows()
+entrance.set(portal(512, 512))
+exit.set(portal(1088, 512))
+updateCamera()
