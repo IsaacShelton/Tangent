@@ -1,0 +1,148 @@
+
+#default witch_info false
+
+import 'sys/cmath.adept'
+enum WitchAction (NONE, FLY, SWOOP, FADE_OUT, FADE_IN)
+
+struct WitchBoss (x, y, initial_x, initial_y, alpha float, direction, direction_change, health int, animation GameAnimation, action WitchAction, transition WitchAction) {
+    func create(x, y int) {
+        this.x = x as float
+        this.y = y as float
+        this.initial_x = x as float
+        this.initial_y = y as float
+        this.alpha = 1.0f
+        this.direction = 180
+        this.direction_change = -1
+        this.health = 8
+        this.animation = witch_fly.newInstance()
+        this.action = WitchAction::FLY
+        this.transition = WitchAction::NONE
+    }
+    
+    func draw {
+        if this.transition == WitchAction::FADE_IN || this.transition == WitchAction::FADE_OUT {
+            captDrawOpacity(this.alpha)
+        }
+        
+        drawFromCameraEx(this.animation.now(), this.x, this.y - 64.0f, 128.0f * this.getFacingDirection() as float, 128.0f)
+        captDrawOpacity(1.0f)
+        
+        #if witch_info
+            drawFromCameraEx(bullet, this.x - 128.0f - 8.0f, this.y - 128.0f - 8.0f, 384.0f, 24.0f + 16.0f)
+            debug Text = text("X % Y % D %" % this.x as int % this.y as int % this.direction, 24.0)
+            debug.draw(this.x - 128.0f, this.y - 128.0f)
+            debug.destroy()
+        #end
+    }
+    
+    #if !mapmaker
+        func getFacingDirection int = this.x as int + 64 < player.x + 32 ? 1 : -1
+    #else
+        func getFacingDirection int = 1
+    #end
+    
+    func getAABB AABB = AABB(this.x as int, this.y as int, 128, 80)
+    func getAABB(adj_x, adj_y int) AABB = AABB(this.x as int + adj_x, this.y as int + adj_y, 128, 80)
+    
+    #if !mapmaker
+        func update {
+            if this.transition != WitchAction::FADE_OUT && this.transition != WitchAction::FADE_IN {
+                // Handle player and witch boss collision
+                playerAABB AABB = player.getAABB()
+                if playerAABB.intersecting(this.getAABB()){
+                    if player.vy > 0 && player.y + 32 < this.y as int + 64 {
+                        this.hurt(1)
+                        player.vy = -24
+                    } else {
+                        killPlayer()
+                    }
+                }
+            }
+            
+            if this.animation.frames == witch_cast_fly.frames && this.animation.atEnd() {
+                this.animation = witch_fly.newInstance()
+            } else {
+                this.animation.update()
+            }
+            
+            if this.transition == WitchAction::FADE_OUT {
+                this.alpha = this.alpha * 14.0f / 15.0f
+                if fabs(this.alpha) < 0.01f, this.transition = WitchAction::FADE_IN
+            }
+            
+            if this.transition == WitchAction::FADE_IN {
+                this.alpha = (this.alpha * 14.0f + 1.0f) / 15.0f
+                if fabs(this.alpha - 1.0f) < 0.01f, this.transition = WitchAction::NONE
+            }
+            
+            if this.transition == WitchAction::FLY {
+                target_x float = this.initial_x
+                target_y float = this.initial_y
+                
+                this.x = fabs(this.x - this.initial_x) > 256.0f ? (this.x * 5.0f + this.initial_x) / 6.0f : (this.x + this.initial_x) / 2.0f
+                this.y = fabs(this.y - this.initial_y) > 256.0f ? (this.y * 5.0f + this.initial_y) / 6.0f : (this.y + this.initial_y) / 2.0f
+                
+                if fabs(this.x - this.initial_x) < 1.0 && fabs(this.y - this.initial_y) < 1.0 {
+                    this.x = this.initial_x
+                    this.y = this.initial_y
+                    this.action = WitchAction::FLY
+                    this.transition = WitchAction::NONE
+                    this.direction = 180
+                    this.direction_change = -1
+                }
+                
+                return
+            }
+            
+            if this.action == WitchAction::FLY {
+                this.direction += this.direction_change * 2
+                this.direction = this.direction % 360
+                while this.direction < 0, this.direction += 360
+                
+                if this.direction == 90, this.direction_change *= -1
+                
+                radians float = this.direction as float * 3.14159265f / 180.0f
+                this.x += 8.0f * cosf(radians)
+                this.y -= 8.0f * sinf(radians)
+                
+                if this.animation.frames == witch_cast_fly.frames {
+                    if this.animation.current_frame == 5 && this.animation.ticker == 0 {
+                        // Spawn in frog
+                        spawn_x int = this.x as int + 64 + this.getFacingDirection() * 256
+                        spawn_y int = this.y as int
+                        reversed bool = cast bool (captRandom() < 0.5)
+                        
+                        if captRandom() < 0.75 {
+                            // Two
+                            crawlers.add(crawler(FROG, spawn_x - 2, spawn_y, 2, reversed))
+                            crawlers.add(crawler(FROG, spawn_x + 2, spawn_y, 2, !reversed))
+                        } else {
+                            // One
+                            crawlers.add(crawler(FROG, spawn_x, spawn_y, 2, reversed))
+                        }
+                    }
+                } else if captRandom() < 0.01 * cast double (4 - this.health / 5) && crawlers.length < 100 {
+                    this.animation = witch_cast_fly.newInstance()
+                }
+                
+                return
+            }
+        }
+        
+        func hurt(damage int) {
+            // Deal damage
+            this.health -= damage
+            
+            // Die if killed
+            if this.health <= 0, witch_boss.rid()
+            
+            // Fade out
+            this.transition = WitchAction::FADE_OUT
+        }
+    #end
+}
+
+func create(this *<WitchBoss> Optional, x, y int) {
+    this.value.create(x, y)
+    this.has = true
+}

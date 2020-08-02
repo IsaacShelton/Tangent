@@ -16,10 +16,13 @@ outwards_portal GameAnimation
 disabled_portal GameAnimation
 smoke GameAnimation
 flame GameAnimation
+hex GameAnimation
 enabler GameAnimation
 coin GameAnimation
 slimesmoke GameAnimation
 frog_animation GameAnimation
+witch_fly GameAnimation
+witch_cast_fly GameAnimation
 
 func loadAnimations(assetsFolder String) {
     wave = gameAnimation(assetsFolder + "wave%.png", 0, 3, 10)
@@ -39,10 +42,13 @@ func loadAnimations(assetsFolder String) {
     disabled_portal = gameAnimation(assetsFolder + "disabled_portal%.png", 0, 16, 5)
     smoke = gameAnimation(assetsFolder + "smoke%.png", 0, 4, 1)
     flame = gameAnimation(assetsFolder + "flame%.png", 0, 1, 1)
+    hex = gameAnimation(assetsFolder + "hex%.png", 0, 3, 1)
     enabler = gameAnimation(assetsFolder + "enabler%.png", 0, 1, 20)
     coin = gameAnimation(assetsFolder + "coin%.png", 0, 7, 5)
     slimesmoke = gameAnimation(assetsFolder + "slimesmoke%.png", 0, 3, 1)
     frog_animation = gameAnimation(assetsFolder + "frog%.png", 0, 4, 15)
+    witch_fly = gameAnimation(assetsFolder + "witch_fly%.png", 0, 3, 15)
+    witch_cast_fly = gameAnimation(assetsFolder + "witch_cast_fly%.png", 0, 7, 15)
 }
 
 func destroyAnimations {
@@ -62,8 +68,11 @@ func destroyAnimations {
     disabled_portal.destroy()
     smoke.destroy()
     flame.destroy()
+    hex.destroy()
     enabler.destroy()
     coin.destroy()
     slimesmoke.destroy()
     frog_animation.destroy()
+    witch_fly.destroy()
+    witch_cast_fly.destroy()
 }

@@ -1,4 +1,5 @@
 
+#set log_string_deletion true
 #set mapmaker true
 pragma compiler_supports '2.2'
 
@@ -17,6 +18,7 @@ import 'Swordfish.adept'
 import 'Optional.adept'
 import 'Theme.adept'
 import 'SlimeBoss.adept'
+import 'WitchBoss.adept'
 import 'Text.adept'
 
 import 'globals.adept'
@@ -31,10 +33,16 @@ import '2.2/List.adept'
 import 'captain_prototype/captain.adept'
 
 enum MapMakerPlacement (PLATFORM, LAKE, ENTRANCE, EXIT, BRIDGE, CRAWLER, SWORDFISH, SIGN, ITEMSPAWN)
+enum MapMakerIntention (SAVE, LOAD, EXPORT, SIGN)
 
 mapmaker_zoom float
 mapmaker_grid bool
 mapmaker_placement MapMakerPlacement
+mapmaker_asking bool
+mapmaker_prompt String
+mapmaker_answer String
+mapmaker_intention MapMakerIntention
+mapmaker_message String
 
 func main {
     unless captPrepare(), return
@@ -61,10 +69,43 @@ func on_setup {
     mapmaker_zoom = 1.0f
     mapmaker_grid = true
     mapmaker_placement = MapMakerPlacement::LAKE
+    mapmaker_asking = false
+    mapmaker_prompt = ""
+    mapmaker_answer = ""
+    mapmaker_intention = MapMakerIntention::SAVE
+    mapmaker_message = ""
+    glfwSetCharCallback(_captain_window, func &on_char)
 }
 
 func on_key(key, scancode, action, mods int) {
     if action != GLFW_PRESS, return
+    
+    if mapmaker_asking {
+        if key == GLFW_KEY_ESCAPE {
+            mapmaker_asking = false
+        } else if key == GLFW_KEY_BACKSPACE {
+            mapmaker_answer.reduce(1)
+        } else if key == GLFW_KEY_ENTER {
+            // Fulfill intention
+            if mapmaker_intention == MapMakerIntention::SAVE {
+                saveBinary(mapmaker_answer)
+            } else if mapmaker_intention == MapMakerIntention::LOAD {
+                loadBinary(mapmaker_answer)
+            } else if mapmaker_intention == MapMakerIntention::EXPORT {
+                exportPseudoCode(mapmaker_answer)
+            } else if mapmaker_intention == MapMakerIntention::SIGN {
+                mapmaker_answer = mapmaker_answer.replace("~", "\n")
+                signs.add(sign(getSnappedWorldX() as int, getSnappedWorldY() as int, mapmaker_answer.commit()))
+            }
+            mapmaker_asking = false
+        }
+        return
+    }
+    
+    if key == GLFW_KEY_ESCAPE {
+        mapmaker_message = ""
+        return
+    }
     
     if cast bool (mods & GLFW_MOD_CONTROL) || cast bool (mods & GLFW_MOD_SUPER) {
         if key == GLFW_KEY_E, exportPseudoCode()
@@ -87,21 +128,21 @@ func on_key(key, scancode, action, mods int) {
         
         if crawler {
             if cast bool (mods & GLFW_MOD_SHIFT) {
-                if key == GLFW_KEY_W, crawler.y -= 64; return
-                if key == GLFW_KEY_S, crawler.y += 64; return
-                if key == GLFW_KEY_A, crawler.x -= 64; return
-                if key == GLFW_KEY_D, crawler.x += 64; return
+                if key == GLFW_KEY_W, crawler.y -= getStandardUnit(); return
+                if key == GLFW_KEY_S, crawler.y += getStandardUnit(); return
+                if key == GLFW_KEY_A, crawler.x -= getStandardUnit(); return
+                if key == GLFW_KEY_D, crawler.x += getStandardUnit(); return
             } else {
                 if key == GLFW_KEY_A {
                     if crawler.vx < 0, crawler.speed += 1
                     else if --crawler.speed == 0, crawler.speed = 1; crawler.vx *= -1
-                    printf('Crawler Speed: %d\n', crawler.speed)
+                    mapmaker_message = "Crawler Speed: %" % crawler.speed
                     return
                 }
                 if key == GLFW_KEY_D {
                     if crawler.vx >= 0, crawler.speed += 1
                     else if --crawler.speed == 0, crawler.speed = 1; crawler.vx *= -1
-                    printf('Crawler Speed: %d\n', crawler.speed)
+                    mapmaker_message = "Crawler Speed: %" % crawler.speed
                     return
                 }
             }
@@ -114,31 +155,31 @@ func on_key(key, scancode, action, mods int) {
         
         if swordfish {
             if cast bool (mods & GLFW_MOD_SHIFT) {
-                if key == GLFW_KEY_W, swordfish.y -= 64; return
-                if key == GLFW_KEY_S, swordfish.y += 64; return
-                if key == GLFW_KEY_A, swordfish.x -= 64; return
-                if key == GLFW_KEY_D, swordfish.x += 64; return
+                if key == GLFW_KEY_W, swordfish.y -= getStandardUnit(); return
+                if key == GLFW_KEY_S, swordfish.y += getStandardUnit(); return
+                if key == GLFW_KEY_A, swordfish.x -= getStandardUnit(); return
+                if key == GLFW_KEY_D, swordfish.x += getStandardUnit(); return
             } else {
                 if key == GLFW_KEY_A {
                     if swordfish.vx < 0, swordfish.speed += 1
                     else if --swordfish.speed == 0, swordfish.speed = 1; swordfish.vx *= -1
-                    printf('Swordfish Speed: %d\n', swordfish.speed)
+                    mapmaker_message = "Swordfish Speed: %" % swordfish.speed
                     return
                 }
                 if key == GLFW_KEY_D {
                     if swordfish.vx >= 0, swordfish.speed += 1
                     else if --swordfish.speed == 0, swordfish.speed = 1; swordfish.vx *= -1
-                    printf('Swordfish Speed: %d\n', swordfish.speed)
+                    mapmaker_message = "Swordfish Speed: %" % swordfish.speed
                     return
                 }
                 if key == GLFW_KEY_W {
                     swordfish.interval += 30
-                    printf('Swordfish Interval: %d\n', swordfish.interval)
+                    mapmaker_message = "Swordfish Interval: %" % swordfish.interval
                     return
                 }
                 if key == GLFW_KEY_S {
                     if swordfish.interval >= 30, swordfish.interval -= 30
-                    printf('Swordfish Interval: %d\n', swordfish.interval)
+                    mapmaker_message = "Swordfish Interval: %" % swordfish.interval
                     return
                 }
             }
@@ -155,24 +196,25 @@ func on_key(key, scancode, action, mods int) {
         if region {
             if cast bool (mods & GLFW_MOD_SHIFT) {
                 if region == platform as *Region {
-                    if key == GLFW_KEY_W, platform.adjustPosition(0, -64)
-                    if key == GLFW_KEY_S, platform.adjustPosition(0, 64)
-                    if key == GLFW_KEY_A, platform.adjustPosition(-64, 0)
-                    if key == GLFW_KEY_D, platform.adjustPosition(64, 0)
+                    if key == GLFW_KEY_W, platform.adjustPosition(0, -1 * getStandardUnit())
+                    if key == GLFW_KEY_S, platform.adjustPosition(0, getStandardUnit())
+                    if key == GLFW_KEY_A, platform.adjustPosition(-1 * getStandardUnit(), 0)
+                    if key == GLFW_KEY_D, platform.adjustPosition(getStandardUnit(), 0)
                 } else {
-                    if key == GLFW_KEY_W, region.adjustPosition(0, -64)
-                    if key == GLFW_KEY_S, region.adjustPosition(0, 64)
-                    if key == GLFW_KEY_A, region.adjustPosition(-64, 0)
-                    if key == GLFW_KEY_D, region.adjustPosition(64, 0)
+                    if key == GLFW_KEY_W, region.adjustPosition(0, -1 * getStandardUnit())
+                    if key == GLFW_KEY_S, region.adjustPosition(0, getStandardUnit())
+                    if key == GLFW_KEY_A, region.adjustPosition(-1 * getStandardUnit(), 0)
+                    if key == GLFW_KEY_D, region.adjustPosition(getStandardUnit(), 0)
                 }
             } else if region == sign as *Region {
                 // Instead of resizing sign, print its text
                 print("Sign Content: \"%\"" % sign.text)
+                mapmaker_message = "----- Sign Content -----\n%" % sign.text
             } else if region != exit_portal as *Region && region != entrance_portal as *Region && region != item_spawn as *Region {
-                if key == GLFW_KEY_W && region != bridge as *Region, region.adjustHeight(-64)
-                if key == GLFW_KEY_S && region != bridge as *Region, region.adjustHeight(64)
-                if key == GLFW_KEY_A, region.adjustWidth(-64)
-                if key == GLFW_KEY_D, region.adjustWidth(64)
+                if key == GLFW_KEY_W && region != bridge as *Region, region.adjustHeight(-1 * getStandardUnit())
+                if key == GLFW_KEY_S && region != bridge as *Region, region.adjustHeight(getStandardUnit())
+                if key == GLFW_KEY_A, region.adjustWidth(-1 * getStandardUnit())
+                if key == GLFW_KEY_D, region.adjustWidth(getStandardUnit())
             }
         }
         
@@ -209,6 +251,7 @@ func on_key(key, scancode, action, mods int) {
     if key == GLFW_KEY_Y, cycleThemes()
     
     if key == GLFW_KEY_H {
+        /*
         print("--------------------------")
         print("Help:")
         print("Y - change theme")
@@ -222,6 +265,8 @@ func on_key(key, scancode, action, mods int) {
         print("N - sign")
         print("M - item spawn")
         print("--------------------------")
+        */
+        mapmaker_message = "Help:\nY - change theme\nF - platform\nZ - lake\nR - entrance portal\nX - exit portal\nB - bridge\nC - crawler\nV - swordfish\nN - sign\nM - item spawn"
     }
     
     if key == GLFW_KEY_F, mapmaker_placement = MapMakerPlacement::PLATFORM
@@ -233,6 +278,11 @@ func on_key(key, scancode, action, mods int) {
     if key == GLFW_KEY_V, mapmaker_placement = MapMakerPlacement::SWORDFISH
     if key == GLFW_KEY_N, mapmaker_placement = MapMakerPlacement::SIGN
     if key == GLFW_KEY_M, mapmaker_placement = MapMakerPlacement::ITEMSPAWN
+}
+
+func on_char(window *GLFWwindow, codepoint uint) {
+    unless mapmaker_asking, return
+    mapmaker_answer = mapmaker_answer + codepoint as ubyte
 }
 
 func on_click(x, y float, button int) {
@@ -265,22 +315,24 @@ func on_click(x, y float, button int) {
     else if mapmaker_placement == MapMakerPlacement::SWORDFISH,
         swordfishes.add(swordfish(SWORDFISH, getSnappedWorldX() as int, getSnappedWorldY() as int, 1, 60, false))
     else if mapmaker_placement == MapMakerPlacement::SIGN {
-        text String = scan("Enter text (use ~ for newlines): ")
-        text = text.replace("~", "\n")
-        signs.add(sign(getSnappedWorldX() as int, getSnappedWorldY() as int, text.commit()))
+        intendTo(MapMakerIntention::SIGN)
     }
     else if mapmaker_placement == MapMakerPlacement::ITEMSPAWN,
         item_spawns.add(itemSpawn(Item::STAR, getSnappedWorldX() as int, getSnappedWorldY() as int))
 }
 
+func getStandardUnit int = captKeyHeld(GLFW_KEY_SEMICOLON) ? 32 : 64
+
 func getSnappedWorldX float {
+    snap int = getStandardUnit()
     captMouseViewPosition(undef x float, undef y float)
-    return cast float (cast int (x + camera_x) / 64 * 64)
+    return cast float (cast int (x + camera_x) / snap * snap)
 }
 
 func getSnappedWorldY float {
+    snap int = getStandardUnit()
     captMouseViewPosition(undef x float, undef y float)
-    return cast float (cast int (y + camera_y) / 64 * 64)
+    return cast float (cast int (y + camera_y) / snap * snap)
 }
 
 func getUnderCursor(list <$Region> List) *$Region {
@@ -349,6 +401,8 @@ func cycleKind(this *Crawler, reverse bool) {
 }
 
 func on_step {
+    if mapmaker_asking, return
+    
     view_w float = 1920.0f / 960.0f * captFrameWidth() as float * mapmaker_zoom
     view_h float = 1280.0f / 640.0f * captFrameHeight() as float * mapmaker_zoom
     captCustomView(view_w, view_h)
@@ -420,8 +474,49 @@ func on_draw {
         repeat captViewHeight() as usize / 64 + 1,
             captDrawTexture(bullet, 0.0f, idx as float * 64.0f - camera_y as float % 64.0f, captViewWidth(), 4.0f)
     }
+    
+    // Draw prompt
+    if mapmaker_asking {
+        captDrawTexture(bullet, 0.0f, 0.0f, captViewWidth(), 32.0f)
+        
+        text Text = text(mapmaker_prompt + mapmaker_answer, 24.0)
+        text.draw(4.0f, 4.0f)
+        text.destroy()
+    }
+    
+    // Draw message
+    if mapmaker_message.length != 0 {
+        newlines int = 0
+        each ubyte in [mapmaker_message.array, mapmaker_message.length],
+            if it == '\n'ub, newlines += 1
+        
+        y float = captViewHeight() - (newlines + 1) as float * 36.0f
+        captDrawTexture(bullet, 0.0f, y, captViewWidth(), (newlines + 1) as float * 36.0f)
+        
+        text Text = text(mapmaker_message, 24.0)
+        text.draw(4.0f, y + 4.0f)
+        text.destroy()
+    }
 }
 
 func on_exit {
     destroyAssets()
+}
+
+func intendTo(intention MapMakerIntention) {
+    mapmaker_asking = true
+    mapmaker_answer = ""
+    mapmaker_intention =  intention
+    
+    if intention == MapMakerIntention::SAVE {
+        mapmaker_prompt = "Enter save filename: "
+    } else if intention == MapMakerIntention::LOAD {
+        mapmaker_prompt = "Enter load filename: "
+    } else if intention == MapMakerIntention::EXPORT {
+        mapmaker_prompt = "Enter export filename: "
+    } else if intention == MapMakerIntention::SIGN {
+        mapmaker_prompt = "Enter text (use ~ for newlines): "
+    } else {
+        mapmaker_prompt = ""
+    }
 }

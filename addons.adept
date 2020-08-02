@@ -3,13 +3,14 @@ import 'sys/cerrno.adept'
 import 'captain_prototype/captain.adept'
 
 func captTexture(filename String) CaptTexture {
-    // HACK: Cause compiler calls __defer__ right before 'return'
     cstr *ubyte = filename.cstr()
+    defer delete cstr
+    
+    errno = 0
     texture CaptTexture = captTexture(cstr)
-    delete cstr
     
     if texture.id == 0 {
-        printf('Error loading texture: %s\n', filename)
+        printf('Error loading texture: %s\n', cstr)
         printf('Reason: %s\n', stbi_failure_reason())
         printf('[errno %d %s]\n', errno, strerror(errno))
     }
@@ -18,7 +19,6 @@ func captTexture(filename String) CaptTexture {
 }
 
 func captTexture(filename String, appoximate bool) CaptTexture {
-    // HACK: Cause compiler calls __defer__ right before 'return'
     cstr *ubyte = filename.cstr()
     defer delete cstr
     
@@ -26,7 +26,7 @@ func captTexture(filename String, appoximate bool) CaptTexture {
     texture CaptTexture = captTexture(cstr, appoximate)
     
     if texture.id == 0 {
-        printf('Error loading texture: %s\n', filename)
+        printf('Error loading texture: %s\n', cstr)
         printf('Reason: %s\n', stbi_failure_reason())
         printf('[errno %d %s]\n', errno, strerror(errno))
     }

@@ -1,0 +1,14 @@
+scene_width = 3840.0f
+setThemeByID(2)
+createPlatform(192, 512, 640, 128, DECOR_BUSH)
+createPlatform(1088, 512, 256, 384, DECOR_FENCE)
+createPlatform(1600, 512, 640, 128, DECOR_MUSHROOMB)
+createPlatform(2496, 512, 256, 384, DECOR_FENCE)
+createPlatform(3008, 512, 640, 128, DECOR_BUSH)
+lakes.add(lake(0, 768, 3840, 512))
+exit_disabled = false
+player.create(480, 448)
+sceneDefaultShadows()
+entrance.set(portal(448, 384))
+exit.set(portal(3328, 384))
+updateCamera()

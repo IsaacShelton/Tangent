@@ -22,6 +22,7 @@ import 'Swordfish.adept'
 import 'Optional.adept'
 import 'Theme.adept'
 import 'SlimeBoss.adept'
+import 'WitchBoss.adept'
 import 'Text.adept'
 import 'globals.adept'
 import 'addons.adept'
@@ -167,6 +168,7 @@ func on_step {
         gun_swim.reset()
         cannoneer_walk.reset()
         cannoneer_swim.reset()
+        double_jumped = true
     }
     
     // Update conditional animations
@@ -237,6 +239,12 @@ func on_step {
             hit = true
         }
         
+        // Test hit for witch boss
+        unless hit || !witch_boss.has, if aabb.intersecting(witch_boss.value.getAABB()) {
+            witch_boss.value.hurt(1)
+            hit = true
+        }
+        
         if hit, bullets.remove(idx--)
     }
     
@@ -273,6 +281,13 @@ func on_step {
             // Test hit for slime boss
             unless hit || !slime_boss.has, if aabb.intersecting(slime_boss.value.getAABB()) {
                 slime_boss.value.hurt(2)
+                hit = true
+            }
+            
+            // Test hit for witch boss
+            unless hit || !witch_boss.has, if aabb.intersecting(witch_boss.value.getAABB()) {
+                cannon_ball.rid()
+                witch_boss.value.hurt(2)
                 hit = true
             }
             
@@ -452,6 +467,7 @@ func on_step {
     
     // Update bosses
     if slime_boss.has, slime_boss.value.update()
+    if witch_boss.has, witch_boss.value.update()
     
     // Update cannon
     updateCannon()
@@ -464,6 +480,8 @@ func on_step {
     
     // Scene events
     if scene == 11 && crawlers.length == 0 && !slime_boss.has && exit_disabled && !portal_enabler.has,
+        portal_enabler.set(portalEnabler(928, 480, 64, 64))
+    if scene == 16 && crawlers.length == 0 && !witch_boss.has && exit_disabled && !portal_enabler.has,
         portal_enabler.set(portalEnabler(928, 480, 64, 64))
     
     // Goto next scene if at exit portal
@@ -637,6 +655,7 @@ func on_draw {
     each ItemSpawn in item_spawns, drawItemSpawn(it)
     
     if slime_boss.has, slime_boss.value.draw()
+    if witch_boss.has, witch_boss.value.draw()
     
     each Crawler in crawlers, drawCrawler(it)
     

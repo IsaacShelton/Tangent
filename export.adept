@@ -7,15 +7,15 @@
 import 'sys/cstdio.adept'
 
 func exportPseudoCode {
-    exportPseudoCode(scan("Enter export filename: "))
+    intendTo(MapMakerIntention::EXPORT)
 }
 
 func saveBinary {
-    saveBinary(scan("Enter save filename: "))
+    intendTo(MapMakerIntention::SAVE)
 }
 
 func loadBinary {
-    loadBinary(scan("Enter load filename: "))
+    intendTo(MapMakerIntention::LOAD)
 }
 
 struct BinaryPlatform (x, y, w, h, decor int)
@@ -91,7 +91,7 @@ func binary(this *ItemSpawn) BinaryItemSpawn {
 }
 
 func exportPseudoCode(filename String) {
-    if filename.first(".txt") < 0, print("Must end in '.txt'"); return
+    if filename.first(".txt") < 0, mapmaker_message = "Must end in '.txt'"; return
     
     filename_cstr *ubyte = filename.cstr()
     defer delete filename_cstr
@@ -144,7 +144,7 @@ func exportPseudoCode(filename String) {
         fprintf(file, 'exit.set(portal(%d, %d))\n', exit.value.visual.x, exit.value.visual.y)
     
     fprintf(file, 'updateCamera()\n')
-    print("Exported to %" % filename)
+    mapmaker_message = "Exported to %" % filename
 }
 
 func getExportDecorConstant(decor_id int) *ubyte {
@@ -165,13 +165,13 @@ func getExportDecorConstant(decor_id int) *ubyte {
 }
 
 func saveBinary(filename String) {
-    if filename.first(".txt") >= 0, print("Cannot contain '.txt'"); return
+    if filename.first(".txt") >= 0, mapmaker_message = "Cannot contain '.txt'"; return
     
     filename_cstr *ubyte = filename.cstr()
     defer delete filename_cstr
     
     file *FILE = fopen(filename_cstr, 'wb')
-    unless file, print("Failed to open save file"); return
+    unless file, mapmaker_message = "Failed to open save file"; return
     
     defer fclose(file)
     
@@ -219,7 +219,7 @@ func saveBinary(filename String) {
     fwrite(&exit_binary_portal, sizeof BinaryPortal, 1, file)
     
     // [~] Done
-    defer print("Saved to %" % filename)
+    defer mapmaker_message = "Saved to %" % filename
     
     // [8] crawlers.length
     if binary_version < 8, return
@@ -260,13 +260,13 @@ func saveBinary(filename String) {
 }
 
 func loadBinary(filename String) {
-    if filename.first(".txt") >= 0, print("Cannot contain '.txt'"); return
+    if filename.first(".txt") >= 0, mapmaker_message = "Cannot contain '.txt'"; return
     
     filename_cstr *ubyte = filename.cstr()
     defer delete filename_cstr
     
     file *FILE = fopen(filename_cstr, 'rb')
-    unless file, print("Failed to open load file"); return
+    unless file, mapmaker_message = "Failed to open load file"; return
     
     defer fclose(file)
 
@@ -334,7 +334,7 @@ func loadBinary(filename String) {
         exit.set(portal(exit_binary_portal.x, exit_binary_portal.y))
     
     // [~] Done
-    defer print("Loaded %" % filename)
+    defer mapmaker_message = "Loaded %" % filename
     
     // [8] crawlers.length
     if binary_version < 8, return

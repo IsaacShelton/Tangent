@@ -47,6 +47,7 @@ bullets <Bullet> List
 cannon <Cannon> Optional
 cannon_ball <CannonBall> Optional
 slime_boss <SlimeBoss> Optional
+witch_boss <WitchBoss> Optional
 inventory_open bool
 inventory_bg_shade float
 inventory_selection_x int
@@ -81,19 +82,6 @@ func loadAssets {
 func destroyAssets {
     destroyTextures()
     destroyAnimations()
-    
-    // HACK: Manually deleting global variables since compiler
-    //       doesn't handle it yet
-    platforms.__defer__()
-    lakes.__defer__()
-    bridges.__defer__()
-    crawlers.__defer__()
-    swordfishes.__defer__()
-    item_spawns.__defer__()
-    signs.__defer__()
-    particles.__defer__()
-    bullets.__defer__()
-    collected_resources.__defer__()
 }
 
 func setupState {

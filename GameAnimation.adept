@@ -26,6 +26,10 @@ struct GameAnimation (frames *CaptTexture, length, current_frame, ticker, interv
         if ++this.current_frame == this.length, this.current_frame = 0
     }
     
+    func atEnd bool {
+        return this.current_frame + 1 == this.length && this.ticker + 1 == this.interval
+    }
+    
     func newInstance GameAnimation {
         anim GameAnimation = *this
         anim.current_frame = 0

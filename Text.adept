@@ -1,5 +1,5 @@
 
-FONT_TEXTURE_WIDTH == 256.0f
+FONT_TEXTURE_WIDTH == 384.0f
 FONT_TEXTURE_HEIGHT == 8.0f
 
 struct Text (model CaptModel) {
@@ -60,9 +60,9 @@ func text(content String, scale double) Text {
 func fontIndexFor(character ubyte) usize {
     if character >= 'A'ub && character <= 'Z'ub, return cast usize (character - 'A'ub)
     if character >= 'a'ub && character <= 'z'ub, return cast usize (character - 'a'ub)
-    if character >= '0'ub && character <= '9'ub, return cast usize (character - '0'ub + 32)
+    if character >= '0'ub && character <= '9'ub, return cast usize (character - '0'ub + 35)
     
-    special String = ".,!?-+"
+    special String = ".,!?-+/~:"
     each ubyte in [special.array, special.length], if it == character,
         return idx + 26
     
@@ -71,7 +71,7 @@ func fontIndexFor(character ubyte) usize {
 
 func appendCharacterUVs(character ubyte, uvs *<float> List) {
     if character == ' 'ub {
-        repeat 6, uvs.add(256.0f); uvs.add(0.0f)
+        repeat 6, uvs.add(FONT_TEXTURE_WIDTH); uvs.add(0.0f)
         return
     }
     

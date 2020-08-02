@@ -1,0 +1,11 @@
+scene_width = 1920.0f
+setThemeByID(2)
+createPlatform(64, 832, 1792, 192, DECOR_NONE)
+lakes.add(lake(0, 896, 1920, 384))
+item_spawns.add(itemSpawn(5, 928, 768))
+exit_disabled = true
+player.create(160, 768)
+sceneDefaultShadows()
+entrance.set(portal(128, 704))
+exit.set(portal(1664, 704))
+updateCamera()
