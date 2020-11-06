@@ -13,6 +13,9 @@
 
 *[All modifications & additions are licensed under CC-BY-SA 3.0]*
 
+### Cross Platform
+Runs on Windows and Mac without any modifications
+
 ### How to compile
 Make sure your compiler supports version `2.2`
 
